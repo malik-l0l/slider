@@ -618,7 +618,7 @@
 
   const SOUNDS = [
     {
-      name: "Pure click",
+      name: "1 — Pure click",
       desc: "800Hz sine, crisp & neutral",
       fn: (ctx) => {
         const o = ctx.createOscillator(), g = ctx.createGain();
@@ -630,7 +630,7 @@
       }
     },
     {
-      name: "Triangle tap",
+      name: "2 — Triangle tap",
       desc: "600Hz triangle, very soft",
       fn: (ctx) => {
         const o = ctx.createOscillator(), g = ctx.createGain();
@@ -642,7 +642,7 @@
       }
     },
     {
-      name: "Typewriter",
+      name: "3 — Typewriter",
       desc: "White noise burst, mechanical",
       fn: (ctx) => {
         const buf = ctx.createBuffer(1, ctx.sampleRate * 0.015, ctx.sampleRate);
@@ -656,7 +656,19 @@
       }
     },
     {
-      name: "Soft wood",
+      name: "4 — Ratchet",
+      desc: "Sawtooth 300Hz, fast decay",
+      fn: (ctx) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'sawtooth'; o.frequency.setValueAtTime(300, ctx.currentTime);
+        g.gain.setValueAtTime(0.08, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.03);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(); o.stop(ctx.currentTime + 0.03);
+      }
+    },
+    {
+      name: "5 — Soft wood",
       desc: "180→80Hz sweep, warm tap",
       fn: (ctx) => {
         const o = ctx.createOscillator(), g = ctx.createGain();
@@ -669,8 +681,58 @@
       }
     },
     {
-      name: "Detent snap",
-      desc: "Bandpass noise, physical click",
+      name: "6 — High ping",
+      desc: "1200Hz sine, glassy & brief",
+      fn: (ctx) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'sine'; o.frequency.setValueAtTime(1200, ctx.currentTime);
+        g.gain.setValueAtTime(0.12, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.035);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(); o.stop(ctx.currentTime + 0.035);
+      }
+    },
+    {
+      name: "7 — iPhone-like ★",
+      desc: "1000Hz sine, 40ms — closest to iOS",
+      fn: (ctx) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'sine'; o.frequency.setValueAtTime(1000, ctx.currentTime);
+        g.gain.setValueAtTime(0.14, ctx.currentTime);
+        g.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.04);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(); o.stop(ctx.currentTime + 0.04);
+      }
+    },
+    {
+      name: "8 — Dual tone",
+      desc: "800+1600Hz mix, airy partials",
+      fn: (ctx) => {
+        [[800, 0.12], [1600, 0.06]].forEach(([f, vol]) => {
+          const o = ctx.createOscillator(), g = ctx.createGain();
+          o.type = 'sine'; o.frequency.value = f;
+          g.gain.setValueAtTime(vol, ctx.currentTime);
+          g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.04);
+          o.connect(g); g.connect(ctx.destination);
+          o.start(); o.stop(ctx.currentTime + 0.04);
+        });
+      }
+    },
+    {
+      name: "9 — Muted thud",
+      desc: "50Hz, fast decay, low knock",
+      fn: (ctx) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'sine'; o.frequency.setValueAtTime(50, ctx.currentTime);
+        g.gain.setValueAtTime(0.3, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.05);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(); o.stop(ctx.currentTime + 0.05);
+      }
+    },
+    {
+      name: "10 — Detent snap",
+      desc: "Bandpass noise 2kHz, physical",
       fn: (ctx) => {
         const buf = ctx.createBuffer(1, ctx.sampleRate * 0.02, ctx.sampleRate);
         const d = buf.getChannelData(0);
@@ -684,7 +746,64 @@
       }
     },
     {
-      name: "Notch detent",
+      name: "11 — Soft plastic",
+      desc: "Triangle 500Hz, toylike",
+      fn: (ctx) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'triangle'; o.frequency.setValueAtTime(500, ctx.currentTime);
+        g.gain.setValueAtTime(0.25, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.06);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(); o.stop(ctx.currentTime + 0.06);
+      }
+    },
+    {
+      name: "12 — Freq drop",
+      desc: "Sine 900→300Hz sweep, ratchet",
+      fn: (ctx) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'sine';
+        o.frequency.setValueAtTime(900, ctx.currentTime);
+        o.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.04);
+        g.gain.setValueAtTime(0.18, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.04);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(); o.stop(ctx.currentTime + 0.04);
+      }
+    },
+    {
+      name: "13 — Almost silent",
+      desc: "700Hz, whisper-level tap",
+      fn: (ctx) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'sine'; o.frequency.value = 700;
+        g.gain.setValueAtTime(0.05, ctx.currentTime);
+        g.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.03);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(); o.stop(ctx.currentTime + 0.03);
+      }
+    },
+    {
+      name: "14 — Ceramic",
+      desc: "1500Hz + noise, hard & clean",
+      fn: (ctx) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'sine'; o.frequency.value = 1500;
+        g.gain.setValueAtTime(0.1, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.025);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(); o.stop(ctx.currentTime + 0.025);
+        const buf = ctx.createBuffer(1, ctx.sampleRate * 0.01, ctx.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+        const s = ctx.createBufferSource(), g2 = ctx.createGain();
+        s.buffer = buf; g2.gain.setValueAtTime(0.06, ctx.currentTime);
+        g2.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.01);
+        s.connect(g2); g2.connect(ctx.destination); s.start();
+      }
+    },
+    {
+      name: "15 — Notch detent",
       desc: "750Hz hard gate, dial-like",
       fn: (ctx) => {
         const o = ctx.createOscillator(), g = ctx.createGain();
@@ -697,20 +816,8 @@
       }
     },
     {
-      name: "iPhone-like ★",
-      desc: "1000Hz sine, 40ms — closest to iOS",
-      fn: (ctx) => {
-        const o = ctx.createOscillator(), g = ctx.createGain();
-        o.type = 'sine'; o.frequency.setValueAtTime(1000, ctx.currentTime);
-        g.gain.setValueAtTime(0.14, ctx.currentTime);
-        g.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.04);
-        o.connect(g); g.connect(ctx.destination);
-        o.start(); o.stop(ctx.currentTime + 0.04);
-      }
-    },
-    {
-      name: "Watch crown",
-      desc: "1050Hz, 45ms — micro-mechanical",
+      name: "16 — Watch crown",
+      desc: "1050Hz, 45ms, micro-mechanical",
       fn: (ctx) => {
         const o = ctx.createOscillator(), g = ctx.createGain();
         o.type = 'sine'; o.frequency.value = 1050;
@@ -721,7 +828,31 @@
       }
     },
     {
-      name: "Apple Watch",
+      name: "17 — Damped string",
+      desc: "440Hz sine, 80ms musical decay",
+      fn: (ctx) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'sine'; o.frequency.value = 440;
+        g.gain.setValueAtTime(0.12, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.08);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(); o.stop(ctx.currentTime + 0.08);
+      }
+    },
+    {
+      name: "18 — Haptic body",
+      desc: "200Hz triangle, simulates vibration",
+      fn: (ctx) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'triangle'; o.frequency.value = 200;
+        g.gain.setValueAtTime(0.28, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.035);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(); o.stop(ctx.currentTime + 0.035);
+      }
+    },
+    {
+      name: "19 — Apple Watch",
       desc: "900+450Hz dual partial, sharp",
       fn: (ctx) => {
         [[900, 0.1], [450, 0.06]].forEach(([f, vol]) => {
@@ -735,7 +866,7 @@
       }
     },
     {
-      name: "iOS picker ★",
+      name: "20 — iOS picker ★",
       desc: "950Hz bandpass filtered — most iOS",
       fn: (ctx) => {
         const o = ctx.createOscillator(), f = ctx.createBiquadFilter(), g = ctx.createGain();
