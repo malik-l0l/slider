@@ -83,6 +83,32 @@
     }
     .toggle.on::after { transform: translateX(16px); }
 
+    .haptic-intensity-row {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      padding: 8px 10px 2px; gap: 12px;
+      transition: opacity 0.2s;
+    }
+    .haptic-intensity-row.disabled { opacity: 0.3; pointer-events: none; }
+    .haptic-intensity-track { display: flex; flex-direction: column; gap: 4px; flex: 1; max-width: 160px; }
+    .haptic-intensity-track input[type="range"] {
+      width: 100%; height: 3px; appearance: none; -webkit-appearance: none;
+      background: rgba(255,255,255,0.15); border-radius: 999px; outline: none; cursor: pointer;
+    }
+    .haptic-intensity-track input[type="range"]::-webkit-slider-thumb {
+      appearance: none; -webkit-appearance: none;
+      width: 14px; height: 14px; border-radius: 50%;
+      background: #fff; cursor: pointer;
+      box-shadow: 0 0 0 2px rgba(0,0,0,0.4);
+    }
+    .haptic-intensity-track input[type="range"]::-moz-range-thumb {
+      width: 14px; height: 14px; border-radius: 50%;
+      background: #fff; cursor: pointer; border: none;
+    }
+    .haptic-intensity-labels {
+      display: flex; justify-content: space-between;
+      font-size: 10px; color: rgba(255,255,255,0.25);
+    }
+
     .card {
       position: relative;
       width: 384px;
@@ -287,6 +313,15 @@
   <div class="haptic-row">
     <span class="haptic-label">Haptics (mobile)</span>
     <button class="toggle on" id="hapticToggle" aria-label="Toggle haptics"></button>
+  </div>
+  <div class="haptic-intensity-row" id="hapticIntensityRow">
+    <span class="haptic-label">Intensity</span>
+    <div class="haptic-intensity-track">
+      <input type="range" id="hapticIntensity" min="1" max="3" step="1" value="2" />
+      <div class="haptic-intensity-labels">
+        <span>Light</span><span>Medium</span><span>Strong</span>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -608,7 +643,7 @@
   // ══════════════════════════════════════════════════════════════
   let audioCtx = null;
   let hapticOn = true;
-  let selectedSound = 3; // default: "4 — iPhone-like" (0-based)
+  let selectedSound = 0; // default: "1 — Pure click"
 
   function getAudioCtx() {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -655,45 +690,7 @@
       }
     },
     {
-      name: "4 — iPhone-like ★",
-      desc: "1000Hz sine, 40ms — closest to iOS",
-      fn: (ctx) => {
-        const o = ctx.createOscillator(), g = ctx.createGain();
-        o.type = 'sine'; o.frequency.setValueAtTime(1000, ctx.currentTime);
-        g.gain.setValueAtTime(0.14, ctx.currentTime);
-        g.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.04);
-        o.connect(g); g.connect(ctx.destination);
-        o.start(); o.stop(ctx.currentTime + 0.04);
-      }
-    },
-    {
-      name: "5 — Freq drop",
-      desc: "900→300Hz sweep, pitched ratchet",
-      fn: (ctx) => {
-        const o = ctx.createOscillator(), g = ctx.createGain();
-        o.type = 'sine';
-        o.frequency.setValueAtTime(900, ctx.currentTime);
-        o.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.04);
-        g.gain.setValueAtTime(0.18, ctx.currentTime);
-        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.04);
-        o.connect(g); g.connect(ctx.destination);
-        o.start(); o.stop(ctx.currentTime + 0.04);
-      }
-    },
-    {
-      name: "6 — Watch crown",
-      desc: "1050Hz, 45ms, micro-mechanical",
-      fn: (ctx) => {
-        const o = ctx.createOscillator(), g = ctx.createGain();
-        o.type = 'sine'; o.frequency.value = 1050;
-        g.gain.setValueAtTime(0.13, ctx.currentTime);
-        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.045);
-        o.connect(g); g.connect(ctx.destination);
-        o.start(); o.stop(ctx.currentTime + 0.045);
-      }
-    },
-    {
-      name: "7 — Damped string",
+      name: "4 — Damped string",
       desc: "440Hz sine, 80ms musical decay",
       fn: (ctx) => {
         const o = ctx.createOscillator(), g = ctx.createGain();
@@ -705,7 +702,7 @@
       }
     },
     {
-      name: "8 — Haptic body",
+      name: "5 — Haptic body",
       desc: "200Hz triangle, simulates vibration",
       fn: (ctx) => {
         const o = ctx.createOscillator(), g = ctx.createGain();
@@ -717,7 +714,7 @@
       }
     },
     {
-      name: "9 — Apple Watch",
+      name: "6 — Apple Watch",
       desc: "900+450Hz dual partial, sharp",
       fn: (ctx) => {
         [[900, 0.1], [450, 0.06]].forEach(([f, vol]) => {
@@ -728,82 +725,6 @@
           o.connect(g); g.connect(ctx.destination);
           o.start(); o.stop(ctx.currentTime + 0.035);
         });
-      }
-    },
-    {
-      name: "10 — iOS picker ★",
-      desc: "950Hz bandpass filtered — most iOS",
-      fn: (ctx) => {
-        const o = ctx.createOscillator(), f = ctx.createBiquadFilter(), g = ctx.createGain();
-        o.type = 'sine'; o.frequency.value = 950;
-        f.type = 'bandpass'; f.frequency.value = 950; f.Q.value = 2;
-        g.gain.setValueAtTime(0.18, ctx.currentTime);
-        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.04);
-        o.connect(f); f.connect(g); g.connect(ctx.destination);
-        o.start(); o.stop(ctx.currentTime + 0.04);
-      }
-    },
-    {
-      name: "11 — Bubble pop",
-      desc: "Sine chirp 400→800Hz, playful",
-      fn: (ctx) => {
-        const o = ctx.createOscillator(), g = ctx.createGain();
-        o.type = 'sine';
-        o.frequency.setValueAtTime(400, ctx.currentTime);
-        o.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.025);
-        g.gain.setValueAtTime(0.16, ctx.currentTime);
-        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.035);
-        o.connect(g); g.connect(ctx.destination);
-        o.start(); o.stop(ctx.currentTime + 0.035);
-      }
-    },
-    {
-      name: "12 — Vinyl tick",
-      desc: "Highpass noise burst, record-like",
-      fn: (ctx) => {
-        const buf = ctx.createBuffer(1, ctx.sampleRate * 0.012, ctx.sampleRate);
-        const d = buf.getChannelData(0);
-        for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-        const s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
-        f.type = 'highpass'; f.frequency.value = 3500; f.Q.value = 0.5;
-        s.buffer = buf;
-        g.gain.setValueAtTime(0.22, ctx.currentTime);
-        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.012);
-        s.connect(f); f.connect(g); g.connect(ctx.destination); s.start();
-      }
-    },
-    {
-      name: "13 — Glass tap",
-      desc: "Sine 1100Hz + 2200Hz, crystalline",
-      fn: (ctx) => {
-        [[1100, 0.1], [2200, 0.04]].forEach(([f, vol]) => {
-          const o = ctx.createOscillator(), g = ctx.createGain();
-          o.type = 'sine'; o.frequency.value = f;
-          g.gain.setValueAtTime(vol, ctx.currentTime);
-          g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.06);
-          o.connect(g); g.connect(ctx.destination);
-          o.start(); o.stop(ctx.currentTime + 0.06);
-        });
-      }
-    },
-    {
-      name: "14 — Pen click",
-      desc: "Noise + 600Hz body, satisfying snap",
-      fn: (ctx) => {
-        const o = ctx.createOscillator(), go = ctx.createGain();
-        o.type = 'sine'; o.frequency.value = 600;
-        go.gain.setValueAtTime(0.15, ctx.currentTime);
-        go.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.03);
-        o.connect(go); go.connect(ctx.destination);
-        o.start(); o.stop(ctx.currentTime + 0.03);
-        const buf = ctx.createBuffer(1, ctx.sampleRate * 0.008, ctx.sampleRate);
-        const d = buf.getChannelData(0);
-        for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-        const s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), gn = ctx.createGain();
-        f.type = 'bandpass'; f.frequency.value = 1200; f.Q.value = 2;
-        s.buffer = buf; gn.gain.setValueAtTime(0.18, ctx.currentTime);
-        gn.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.008);
-        s.connect(f); f.connect(gn); gn.connect(ctx.destination); s.start();
       }
     },
   ];
@@ -817,7 +738,11 @@
 
   function triggerHaptic() {
     if (!hapticOn) return;
-    if (navigator.vibrate) navigator.vibrate([10, 0, 10]);
+    if (!navigator.vibrate) return;
+    const level = parseInt(document.getElementById('hapticIntensity').value);
+    if (level === 1) navigator.vibrate(6);
+    else if (level === 2) navigator.vibrate([10, 0, 10]);
+    else navigator.vibrate([14, 4, 14, 4, 14]);
   }
 
   // ── Build sound picker UI ─────────────────────────────────────
@@ -863,9 +788,11 @@
 
   // ── Haptic toggle ─────────────────────────────────────────────
   const hapticToggle = document.getElementById('hapticToggle');
+  const hapticIntensityRow = document.getElementById('hapticIntensityRow');
   hapticToggle.addEventListener('click', () => {
     hapticOn = !hapticOn;
     hapticToggle.classList.toggle('on', hapticOn);
+    hapticIntensityRow.classList.toggle('disabled', !hapticOn);
   });
 
   // ── Hook tick sound + haptic into the snap tracking ───────────
