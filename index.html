@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Radial Slider</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+      min-height: 100dvh;
+      background: #18181b;
+      font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+      padding: 32px 16px;
+    }
+
+    .sound-panel {
+      width: 384px;
+      background: #111113;
+      border-radius: 20px;
+      padding: 16px 18px;
+      border: 0.5px solid rgba(255,255,255,0.08);
+    }
+    .sound-panel-title {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.35);
+      margin-bottom: 12px;
+    }
+    .sound-options { display: flex; flex-direction: column; gap: 2px; }
+    .sound-option {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 10px; border-radius: 10px; cursor: pointer;
+      transition: background 0.12s;
+    }
+    .sound-option:hover { background: rgba(255,255,255,0.05); }
+    .sound-option.active { background: rgba(255,255,255,0.08); }
+    .sound-option input[type="radio"] {
+      appearance: none; -webkit-appearance: none;
+      width: 16px; height: 16px; border-radius: 50%;
+      border: 1.5px solid rgba(255,255,255,0.25);
+      position: relative; flex-shrink: 0; cursor: pointer;
+      transition: border-color 0.15s; background: transparent;
+    }
+    .sound-option input[type="radio"]:checked {
+      border-color: #fff; background: #fff;
+      box-shadow: inset 0 0 0 3.5px #111113;
+    }
+    .sound-label { flex: 1; display: flex; align-items: baseline; gap: 8px; }
+    .sound-label-name { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.85); }
+    .sound-label-desc { font-size: 11px; color: rgba(255,255,255,0.35); }
+    .preview-btn {
+      width: 24px; height: 24px; border-radius: 50%; border: none;
+      background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.5);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: background 0.12s, color 0.12s; padding: 0;
+    }
+    .preview-btn:hover { background: rgba(255,255,255,0.15); color: #fff; }
+    .preview-btn svg { width: 10px; height: 10px; }
+    .haptic-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 10px 2px; margin-top: 8px;
+      border-top: 0.5px solid rgba(255,255,255,0.06);
+    }
+    .haptic-label { font-size: 12px; color: rgba(255,255,255,0.4); }
+    .toggle {
+      width: 36px; height: 20px; border-radius: 999px;
+      background: rgba(255,255,255,0.12); position: relative;
+      cursor: pointer; transition: background 0.2s; border: none; padding: 0;
+    }
+    .toggle.on { background: #34c759; }
+    .toggle::after {
+      content: ''; position: absolute; top: 2px; left: 2px;
+      width: 16px; height: 16px; border-radius: 50%; background: #fff;
+      transition: transform 0.2s cubic-bezier(0.34,1.4,0.64,1);
+    }
+    .toggle.on::after { transform: translateX(16px); }
+
+    .card {
+      position: relative;
+      width: 384px;
+      height: 144px;
+      background: #000;
+      border-radius: 24px;
+      padding: 16px;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.6);
+      overflow: hidden;
+    }
+
+    /* bottom fade overlay */
+    .card::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 20%;
+      background: linear-gradient(to bottom, transparent, black);
+      z-index: 30;
+      pointer-events: none;
+    }
+
+    /* center white indicator line */
+    .indicator {
+      position: absolute;
+      left: 50%;
+      top: 52px;
+      transform: translateX(-50%);
+      width: 2px;
+      height: calc(100% - 52px);
+      background: white;
+      border-radius: 999px;
+      z-index: 20;
+      pointer-events: none;
+      box-shadow:
+        0 0 3px 1px rgba(255, 255, 255, 0.30),
+        0 0 8px 2px rgba(255, 255, 255, 0.12);
+    }
+
+    .value-display {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 20px;
+      font-weight: 500;
+      margin-bottom: 24px;
+      letter-spacing: 0.01em;
+      pointer-events: none;
+      position: relative;
+      z-index: 10;
+      height: 28px;
+    }
+
+    .value-display span {
+      display: inline-block;
+      min-width: 2ch;
+      text-align: center;
+      transition: transform 0.15s cubic-bezier(0.34,1.56,0.64,1), opacity 0.1s, color 0.2s;
+    }
+
+    /* Red shake class for boundary hit */
+    .value-display span.at-zero {
+      color: #ef4444;
+    }
+
+    @keyframes shake {
+      0%   { transform: translateX(0); }
+      15%  { transform: translateX(-5px); }
+      30%  { transform: translateX(5px); }
+      45%  { transform: translateX(-4px); }
+      60%  { transform: translateX(4px); }
+      75%  { transform: translateX(-2px); }
+      90%  { transform: translateX(2px); }
+      100% { transform: translateX(0); }
+    }
+
+    .value-display span.shake {
+      animation: shake 0.4s cubic-bezier(0.36,0.07,0.19,0.97) both;
+    }
+
+    .wheel-container {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1;
+      cursor: grab;
+      user-select: none;
+      touch-action: none;
+    }
+    .wheel-container:active { cursor: grabbing; }
+
+    .wheel {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+    }
+
+    .tick {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      justify-content: center;
+      overflow: hidden;
+      border-radius: 50%;
+    }
+
+    .tick-line {
+      position: absolute;
+      top: 0;
+      border-radius: 1px;
+      transition: background 0.1s;
+    }
+
+    /* Minor ticks (every 1) — smallest */
+    .tick-line.minor {
+      width: 1.5px;
+      height: 18px;
+      background: #e5e7eb;
+      box-shadow: 0 0 3px 1px rgba(255, 255, 255, 0.15);
+    }
+
+    /* Major ticks (every 5) — medium */
+    .tick-line.major {
+      width: 2px;
+      height: 25px;
+      background: #e5e7eb;
+      box-shadow: 0 0 4px 1px rgba(255, 255, 255, 0.22);
+    }
+
+    /* Super ticks (every 10) — tallest, original size */
+    .tick-line.super {
+      width: 2px;
+      height: 32px;
+      background: #e5e7eb;
+      box-shadow: 0 0 5px 2px rgba(255, 255, 255, 0.28);
+    }
+
+    .reset-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 40;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.6);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s, color 0.2s, transform 0.2s;
+      padding: 0;
+    }
+    .reset-btn:hover {
+      background: rgba(255,255,255,0.18);
+      color: #fff;
+    }
+    .reset-btn:active {
+      transform: rotate(-45deg) scale(0.9);
+    }
+    .reset-btn svg {
+      width: 13px;
+      height: 13px;
+    }
+
+    .color-overlay {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: calc(50% + 16px);
+      background: linear-gradient(to right, #3b82f6, #eab308);
+      mix-blend-mode: multiply;
+      pointer-events: none;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <button class="reset-btn" id="resetBtn" title="Reset">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+      <path d="M3 3v5h5"/>
+    </svg>
+  </button>
+  <div class="indicator"></div>
+  <div class="value-display"><span id="val">0</span></div>
+
+  <div class="wheel-container" id="wheelContainer">
+    <div class="wheel" id="wheel"></div>
+    <div class="color-overlay"></div>
+  </div>
+</div>
+
+<!-- ── Sound picker panel ─────────────────────────────────── -->
+<div class="sound-panel">
+  <div class="sound-panel-title">Tick Sound</div>
+  <div class="sound-options" id="soundOptions"></div>
+  <div class="haptic-row">
+    <span class="haptic-label">Haptics (mobile)</span>
+    <button class="toggle on" id="hapticToggle" aria-label="Toggle haptics"></button>
+  </div>
+</div>
+
+<script>
+  const TICK_COUNT = 100;
+  const SNAP_ANGLE = 360 / TICK_COUNT;
+  const MAX_VALUE = 500;
+  const MAX_ROT = MAX_VALUE * SNAP_ANGLE;
+
+  // Rubber-band: max visual overshoot in degrees when at boundary
+  const RUBBER_MAX = 12;
+
+  const wheel = document.getElementById('wheel');
+  const valEl = document.getElementById('val');
+  const container = document.getElementById('wheelContainer');
+
+  let accumulatedRotation = 0; // logical rotation (clamped 0..MAX_ROT)
+  let isDragging = false;
+  let startX = 0;
+  let lastDisplayedValue = 0;
+
+  // Velocity tracking
+  let lastClientX = 0;
+  let lastMoveTime = 0;
+  let velocityDps = 0; // degrees-per-second
+  let momentumRAF = null;
+
+  // Rubber-band state
+  let rubberOffset = 0;          // current visual overshoot degrees
+  let rubberRafId = null;
+  let shakeDebounce = false;
+
+  // ── tick builder ──────────────────────────────────────────────
+  for (let i = 0; i < TICK_COUNT; i++) {
+    const tick = document.createElement('div');
+    tick.className = 'tick';
+    tick.style.transform = `rotate(${i * SNAP_ANGLE}deg)`;
+    const line = document.createElement('div');
+    line.className = 'tick-line';
+    if (i % 10 === 0)      line.classList.add('super');
+    else if (i % 5 === 0)  line.classList.add('major');
+    else                   line.classList.add('minor');
+    tick.appendChild(line);
+    wheel.appendChild(tick);
+  }
+
+  // ── helpers ───────────────────────────────────────────────────
+  function getValueFromRotation(rot) {
+    return Math.max(0, Math.min(MAX_VALUE, Math.round(rot / SNAP_ANGLE)));
+  }
+
+  function applyVisualRotation(logicalRot, extra = 0, animate = false) {
+    wheel.style.transition = animate
+      ? 'transform 0.35s cubic-bezier(0.34,1.2,0.64,1)'
+      : 'none';
+    wheel.style.transform = `rotate(${-(logicalRot + extra)}deg)`;
+  }
+
+  let updateDisplay = function(val) {
+    if (val !== lastDisplayedValue) {
+      valEl.style.transform = 'scale(1.2)';
+      valEl.style.opacity = '0.7';
+      setTimeout(() => {
+        valEl.textContent = val;
+        valEl.style.transform = 'scale(1)';
+        valEl.style.opacity = '1';
+      }, 60);
+      lastDisplayedValue = val;
+    }
+  };
+
+  function snapToNearest(rot) {
+    const clamped = Math.max(0, Math.min(MAX_ROT, rot));
+    return Math.round(clamped / SNAP_ANGLE) * SNAP_ANGLE;
+  }
+
+  // ── rubber-band animation ─────────────────────────────────────
+  function animateRubberReturn() {
+    if (rubberRafId) cancelAnimationFrame(rubberRafId);
+    const startOffset = rubberOffset;
+    const startTime = performance.now();
+    const duration = 350; // ms
+
+    function step(now) {
+      const t = Math.min((now - startTime) / duration, 1);
+      // ease out expo
+      const eased = t === 1 ? 0 : startOffset * (1 - Math.pow(2, -10 * t));
+      rubberOffset = eased;
+      applyVisualRotation(accumulatedRotation, rubberOffset);
+      if (t < 1) {
+        rubberRafId = requestAnimationFrame(step);
+      } else {
+        rubberOffset = 0;
+        applyVisualRotation(accumulatedRotation);
+      }
+    }
+    rubberRafId = requestAnimationFrame(step);
+  }
+
+  function triggerBoundaryFeedback(direction) {
+    // direction: -1 means tried to go below 0 (drag R->L at 0),
+    // +1 means tried to go above MAX
+
+    // Rubber-band: visually push slightly in the blocked direction
+    // direction -1 = drag right at boundary -> wheel would rotate positive (wrong direction)
+    // We store overshoot as extra degrees added visually
+    // "drag right from 0" => tried to decrease => tried to go more negative
+    // Visual: wheel rotates positive (opposite of normal decrease) - so rubberOffset is negative
+    const PUSH = 6; // small push degrees
+    rubberOffset = direction * -PUSH;
+    applyVisualRotation(accumulatedRotation, rubberOffset);
+
+    // Then spring back
+    setTimeout(() => animateRubberReturn(), 30);
+
+    // Shake value display in red
+    if (!shakeDebounce) {
+      shakeDebounce = true;
+      valEl.classList.add('at-zero', 'shake');
+      valEl.textContent = '0';
+      lastDisplayedValue = 0;
+      setTimeout(() => {
+        valEl.classList.remove('shake');
+        // keep red briefly then fade back
+        setTimeout(() => valEl.classList.remove('at-zero'), 600);
+        shakeDebounce = false;
+      }, 420);
+    }
+  }
+
+  // ── momentum / inertia ────────────────────────────────────────
+  function startMomentum(initialVelocityDps) {
+    if (momentumRAF) cancelAnimationFrame(momentumRAF);
+    if (Math.abs(initialVelocityDps) < 30) {
+      // Too slow — just snap
+      const snapped = snapToNearest(accumulatedRotation);
+      accumulatedRotation = snapped;
+      applyVisualRotation(snapped, 0, true);
+      updateDisplay(getValueFromRotation(snapped));
+      return;
+    }
+
+    let vel = initialVelocityDps; // deg/s
+    const FRICTION = 0.92;        // per frame (60fps assumed)
+    const MIN_VEL = 15;           // stop threshold deg/s
+    let lastTime = performance.now();
+
+    function step(now) {
+      const dt = Math.min((now - lastTime) / 1000, 0.05); // seconds, capped
+      lastTime = now;
+
+      const delta = vel * dt;
+      const newRot = accumulatedRotation + delta;
+
+      // boundary check
+      if (newRot < 0) {
+        accumulatedRotation = 0;
+        applyVisualRotation(0);
+        updateDisplay(0);
+        triggerBoundaryFeedback(-1);
+        return; // stop momentum
+      }
+      if (newRot > MAX_ROT) {
+        accumulatedRotation = MAX_ROT;
+        applyVisualRotation(MAX_ROT);
+        updateDisplay(MAX_VALUE);
+        return; // stop momentum
+      }
+
+      accumulatedRotation = newRot;
+      applyVisualRotation(accumulatedRotation);
+      updateDisplay(getValueFromRotation(accumulatedRotation));
+
+      vel *= FRICTION;
+
+      if (Math.abs(vel) > MIN_VEL) {
+        momentumRAF = requestAnimationFrame(step);
+      } else {
+        // Settle: snap to nearest
+        const snapped = snapToNearest(accumulatedRotation);
+        accumulatedRotation = snapped;
+        applyVisualRotation(snapped, 0, true);
+        updateDisplay(getValueFromRotation(snapped));
+      }
+    }
+
+    momentumRAF = requestAnimationFrame(step);
+  }
+
+  // ── drag helpers ──────────────────────────────────────────────
+  function onDragStart(clientX) {
+    // Cancel any ongoing momentum/rubber
+    if (momentumRAF) { cancelAnimationFrame(momentumRAF); momentumRAF = null; }
+    if (rubberRafId) { cancelAnimationFrame(rubberRafId); rubberRafId = null; }
+    rubberOffset = 0;
+
+    isDragging = true;
+    startX = clientX;
+    lastClientX = clientX;
+    lastMoveTime = performance.now();
+    velocityDps = 0;
+    // snap accumulatedRotation to current nearest to avoid jump
+    accumulatedRotation = snapToNearest(accumulatedRotation);
+  }
+
+  function onDragMove(clientX) {
+    if (!isDragging) return;
+
+    const now = performance.now();
+    const dt = Math.max(now - lastMoveTime, 1); // ms
+
+    const rawDx = clientX - startX; // total offset from drag start
+    const moveDx = clientX - lastClientX; // incremental
+
+    // ── Velocity-scaled sensitivity ──────────────────────────────
+    // Measure instantaneous speed in px/ms
+    const speed = Math.abs(moveDx) / dt; // px/ms
+    // Map speed to a sensitivity multiplier:
+    //   slow (0 px/ms) -> 1x (precise, 1 tick per ~10px)
+    //   fast (2+ px/ms) -> up to 5x
+    const SENS_MIN = 1.0;
+    const SENS_MAX = 5.0;
+    const SPEED_SCALE = 1.5; // px/ms at which we hit max sensitivity
+    const sensitivity = SENS_MIN + (SENS_MAX - SENS_MIN) * Math.min(speed / SPEED_SCALE, 1);
+
+    // Calculate raw desired rotation (dragging right = decrease, left = increase)
+    const rawDelta = -moveDx * (SNAP_ANGLE / 10) * sensitivity;
+    const desiredRot = accumulatedRotation + rawDelta;
+
+    // ── Rubber-band at 0 boundary ────────────────────────────────
+    if (desiredRot < 0) {
+      // At or below 0: apply rubber-band resistance
+      // The visual overshoot damps proportionally
+      const overshoot = Math.abs(desiredRot);
+      // Rubber-band formula: resistance increases with overshoot
+      const dampened = -Math.min(RUBBER_MAX * (1 - Math.exp(-overshoot / (RUBBER_MAX * 2))), RUBBER_MAX);
+      rubberOffset = dampened;
+      applyVisualRotation(0, rubberOffset);
+      updateDisplay(0);
+    } else if (desiredRot > MAX_ROT) {
+      // At max boundary — hard clamp, no rubber needed
+      accumulatedRotation = MAX_ROT;
+      rubberOffset = 0;
+      applyVisualRotation(MAX_ROT);
+      updateDisplay(MAX_VALUE);
+    } else {
+      rubberOffset = 0;
+      accumulatedRotation = desiredRot;
+      applyVisualRotation(accumulatedRotation);
+      updateDisplay(getValueFromRotation(accumulatedRotation));
+    }
+
+    // Track velocity for momentum (in degrees/second)
+    const rawVelDps = -moveDx * (SNAP_ANGLE / 10) * sensitivity / (dt / 1000);
+    // Smooth velocity with EMA
+    velocityDps = velocityDps * 0.6 + rawVelDps * 0.4;
+
+    lastClientX = clientX;
+    lastMoveTime = now;
+  }
+
+  function onDragEnd() {
+    if (!isDragging) return;
+    isDragging = false;
+
+    // If we released while in rubber-band territory, spring back + shake
+    if (accumulatedRotation <= 0 && rubberOffset < 0) {
+      accumulatedRotation = 0;
+      triggerBoundaryFeedback(-1);
+      return;
+    }
+
+    rubberOffset = 0;
+    // Hand off to momentum
+    startMomentum(velocityDps);
+  }
+
+  // ── Reset button ──────────────────────────────────────────────
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    if (momentumRAF) { cancelAnimationFrame(momentumRAF); momentumRAF = null; }
+    if (rubberRafId) { cancelAnimationFrame(rubberRafId); rubberRafId = null; }
+    rubberOffset = 0;
+    accumulatedRotation = 0;
+    applyVisualRotation(0, 0, true);
+    updateDisplay(0);
+  });
+
+  // ── Mouse events ──────────────────────────────────────────────
+  container.addEventListener('mousedown', (e) => {
+    onDragStart(e.clientX);
+    e.preventDefault();
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    onDragMove(e.clientX);
+  });
+
+  window.addEventListener('mouseup', () => {
+    onDragEnd();
+  });
+
+  // ── Touch events ──────────────────────────────────────────────
+  container.addEventListener('touchstart', (e) => {
+    onDragStart(e.touches[0].clientX);
+    e.preventDefault();
+  }, { passive: false });
+
+  window.addEventListener('touchmove', (e) => {
+    if (!isDragging) return;
+    onDragMove(e.touches[0].clientX);
+  });
+
+  window.addEventListener('touchend', () => {
+    onDragEnd();
+  });
+
+  // ══════════════════════════════════════════════════════════════
+  // ── Audio engine ─────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════════
+  let audioCtx = null;
+  let hapticOn = true;
+  let selectedSound = 6; // default: index of "iPhone-like" (0-based)
+
+  function getAudioCtx() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+  }
+
+  const SOUNDS = [
+    {
+      name: "Pure click",
+      desc: "800Hz sine, crisp & neutral",
+      fn: (ctx) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'sine'; o.frequency.setValueAtTime(800, ctx.currentTime);
+        g.gain.setValueAtTime(0.18, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.04);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(); o.stop(ctx.currentTime + 0.04);
+      }
+    },
+    {
+      name: "Triangle tap",
+      desc: "600Hz triangle, very soft",
+      fn: (ctx) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'triangle'; o.frequency.setValueAtTime(600, ctx.currentTime);
+        g.gain.setValueAtTime(0.2, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.05);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(); o.stop(ctx.currentTime + 0.05);
+      }
+    },
+    {
+      name: "Typewriter",
+      desc: "White noise burst, mechanical",
+      fn: (ctx) => {
+        const buf = ctx.createBuffer(1, ctx.sampleRate * 0.015, ctx.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+        const s = ctx.createBufferSource(), g = ctx.createGain();
+        s.buffer = buf;
+        g.gain.setValueAtTime(0.12, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.015);
+        s.connect(g); g.connect(ctx.destination); s.start();
+      }
+    },
+    {
+      name: "Soft wood",
+      desc: "180→80Hz sweep, warm tap",
+      fn: (ctx) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'sine'; o.frequency.setValueAtTime(180, ctx.currentTime);
+        o.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.06);
+        g.gain.setValueAtTime(0.22, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.06);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(); o.stop(ctx.currentTime + 0.07);
+      }
+    },
+    {
+      name: "Detent snap",
+      desc: "Bandpass noise, physical click",
+      fn: (ctx) => {
+        const buf = ctx.createBuffer(1, ctx.sampleRate * 0.02, ctx.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+        const s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+        f.type = 'bandpass'; f.frequency.value = 2000; f.Q.value = 1;
+        s.buffer = buf;
+        g.gain.setValueAtTime(0.15, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.02);
+        s.connect(f); f.connect(g); g.connect(ctx.destination); s.start();
+      }
+    },
+    {
+      name: "Notch detent",
+      desc: "750Hz hard gate, dial-like",
+      fn: (ctx) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'sine'; o.frequency.value = 750;
+        g.gain.setValueAtTime(0, ctx.currentTime);
+        g.gain.linearRampToValueAtTime(0.18, ctx.currentTime + 0.002);
+        g.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.03);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(); o.stop(ctx.currentTime + 0.03);
+      }
+    },
+    {
+      name: "iPhone-like ★",
+      desc: "1000Hz sine, 40ms — closest to iOS",
+      fn: (ctx) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'sine'; o.frequency.setValueAtTime(1000, ctx.currentTime);
+        g.gain.setValueAtTime(0.14, ctx.currentTime);
+        g.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.04);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(); o.stop(ctx.currentTime + 0.04);
+      }
+    },
+    {
+      name: "Watch crown",
+      desc: "1050Hz, 45ms — micro-mechanical",
+      fn: (ctx) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'sine'; o.frequency.value = 1050;
+        g.gain.setValueAtTime(0.13, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.045);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(); o.stop(ctx.currentTime + 0.045);
+      }
+    },
+    {
+      name: "Apple Watch",
+      desc: "900+450Hz dual partial, sharp",
+      fn: (ctx) => {
+        [[900, 0.1], [450, 0.06]].forEach(([f, vol]) => {
+          const o = ctx.createOscillator(), g = ctx.createGain();
+          o.type = 'sine'; o.frequency.value = f;
+          g.gain.setValueAtTime(vol, ctx.currentTime);
+          g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.035);
+          o.connect(g); g.connect(ctx.destination);
+          o.start(); o.stop(ctx.currentTime + 0.035);
+        });
+      }
+    },
+    {
+      name: "iOS picker ★",
+      desc: "950Hz bandpass filtered — most iOS",
+      fn: (ctx) => {
+        const o = ctx.createOscillator(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+        o.type = 'sine'; o.frequency.value = 950;
+        f.type = 'bandpass'; f.frequency.value = 950; f.Q.value = 2;
+        g.gain.setValueAtTime(0.18, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.04);
+        o.connect(f); f.connect(g); g.connect(ctx.destination);
+        o.start(); o.stop(ctx.currentTime + 0.04);
+      }
+    },
+  ];
+
+  function playTick() {
+    try {
+      const ctx = getAudioCtx();
+      SOUNDS[selectedSound].fn(ctx);
+    } catch(e) {}
+  }
+
+  function triggerHaptic() {
+    if (!hapticOn) return;
+    if (navigator.vibrate) navigator.vibrate(4);
+  }
+
+  // ── Build sound picker UI ─────────────────────────────────────
+  const optionsEl = document.getElementById('soundOptions');
+  SOUNDS.forEach((s, i) => {
+    const row = document.createElement('label');
+    row.className = 'sound-option' + (i === selectedSound ? ' active' : '');
+
+    const radio = document.createElement('input');
+    radio.type = 'radio';
+    radio.name = 'sound';
+    radio.value = i;
+    if (i === selectedSound) radio.checked = true;
+
+    const labelWrap = document.createElement('div');
+    labelWrap.className = 'sound-label';
+    labelWrap.innerHTML = `<span class="sound-label-name">${s.name}</span><span class="sound-label-desc">${s.desc}</span>`;
+
+    const previewBtn = document.createElement('button');
+    previewBtn.className = 'preview-btn';
+    previewBtn.title = 'Preview';
+    previewBtn.innerHTML = `<svg viewBox="0 0 16 16" fill="currentColor"><polygon points="4,2 13,8 4,14"/></svg>`;
+    previewBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      try { SOUNDS[i].fn(getAudioCtx()); } catch(err) {}
+    });
+
+    radio.addEventListener('change', () => {
+      if (radio.checked) {
+        selectedSound = i;
+        document.querySelectorAll('.sound-option').forEach(r => r.classList.remove('active'));
+        row.classList.add('active');
+        try { SOUNDS[i].fn(getAudioCtx()); } catch(err) {}
+      }
+    });
+
+    row.appendChild(radio);
+    row.appendChild(labelWrap);
+    row.appendChild(previewBtn);
+    optionsEl.appendChild(row);
+  });
+
+  // ── Haptic toggle ─────────────────────────────────────────────
+  const hapticToggle = document.getElementById('hapticToggle');
+  hapticToggle.addEventListener('click', () => {
+    hapticOn = !hapticOn;
+    hapticToggle.classList.toggle('on', hapticOn);
+  });
+
+  // ── Hook tick sound + haptic into the snap tracking ───────────
+  let lastTickValue = 0;
+  const _coreDisplay = updateDisplay;
+  updateDisplay = function(val) {
+    if (val !== lastDisplayedValue && Math.abs(val - lastTickValue) >= 1) {
+      playTick();
+      triggerHaptic();
+      lastTickValue = val;
+    }
+    _coreDisplay(val);
+  };</script>
+</body>
+</html>
