@@ -3,101 +3,241 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>3D Horizontal Sliders</title>
+  <title>Radial Slider</title>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500&display=swap');
+
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: flex-start;
+      justify-content: center;
+      gap: 20px;
       min-height: 100dvh;
       background: #18181b;
-      font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
-      padding: 40px 20px;
-      gap: 40px;
-      overflow-y: auto;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      padding: 32px 16px;
     }
 
-    .section-title {
-      color: #a1a1aa;
-      font-size: 14px;
-      font-weight: 600;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      margin-bottom: -20px;
-    }
-
+    /* ── Radial cards ── */
     .card {
+      position: relative;
+      width: 384px;
+      height: 144px;
+      background: #000;
+      border-radius: 24px;
+      padding: 16px;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.6);
+      overflow: hidden;
+    }
+    .card::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 20%;
+      background: linear-gradient(to bottom, transparent, black);
+      z-index: 30;
+      pointer-events: none;
+    }
+
+    .indicator {
+      position: absolute;
+      left: 50%;
+      top: 52px;
+      transform: translateX(-50%);
+      width: 2px;
+      height: calc(100% - 52px);
+      background: white;
+      border-radius: 999px;
+      z-index: 20;
+      pointer-events: none;
+      box-shadow: 0 0 3px 1px rgba(255,255,255,0.30), 0 0 8px 2px rgba(255,255,255,0.12);
+    }
+
+    .value-display {
+      position: relative;
+      width: 100%;
+      height: 28px;
+      margin-bottom: 24px;
+      pointer-events: none;
+      z-index: 10;
+    }
+    .value-display .label {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 13px;
+      color: rgba(255,255,255,0.45);
+      letter-spacing: 0.01em;
+      white-space: nowrap;
+    }
+    .value-display .label-before { right: calc(50% + 26px); }
+    .value-display .label-after  { left:  calc(50% + 26px); }
+    .value-display .val-num {
+      position: absolute;
+      left: 50%; top: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 20px;
+      font-weight: 500;
+      color: white;
+      letter-spacing: 0.01em;
+      text-align: center;
+      transition: transform 0.15s cubic-bezier(0.34,1.56,0.64,1), opacity 0.1s, color 0.2s;
+    }
+    .value-display .val-num.at-zero { color: #ef4444; }
+
+    @keyframes shake {
+      0%,100% { transform: translate(-50%,-50%) translateX(0); }
+      15%,75%  { transform: translate(-50%,-50%) translateX(-5px); }
+      30%,60%  { transform: translate(-50%,-50%) translateX(5px); }
+      45%      { transform: translate(-50%,-50%) translateX(-4px); }
+      90%      { transform: translate(-50%,-50%) translateX(2px); }
+    }
+    .value-display .val-num.shake {
+      animation: shake 0.4s cubic-bezier(0.36,0.07,0.19,0.97) both;
+    }
+
+    .wheel-container {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1;
+      cursor: grab;
+      user-select: none;
+      touch-action: none;
+    }
+    .wheel-container:active { cursor: grabbing; }
+
+    .wheel {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+    }
+
+    .tick {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      justify-content: center;
+      overflow: hidden;
+      border-radius: 50%;
+    }
+    .tick-line {
+      position: absolute;
+      top: 0;
+      border-radius: 1px;
+    }
+    .tick-line.minor { width: 1.5px; height: 18px; background: #e5e7eb; box-shadow: 0 0 3px 1px rgba(255,255,255,0.15); }
+    .tick-line.major { width: 2px;   height: 25px; background: #e5e7eb; box-shadow: 0 0 4px 1px rgba(255,255,255,0.22); }
+    .tick-line.super { width: 2px;   height: 32px; background: #e5e7eb; box-shadow: 0 0 5px 2px rgba(255,255,255,0.28); }
+
+    .color-overlay {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: calc(50% + 16px);
+      background: linear-gradient(to right, #3b82f6, #eab308);
+      mix-blend-mode: multiply;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* ── Horizontal slider card ── */
+    .card-horizontal {
       position: relative;
       width: 384px;
       height: 104px;
       background: #000;
       border-radius: 24px;
-      padding: 16px 20px 0;
+      padding: 16px 16px 0;
       box-shadow: 0 25px 50px rgba(0,0,0,0.6);
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      gap: 0;
     }
-
-    .card::before,
-    .card::after {
+    .card-horizontal::before,
+    .card-horizontal::after {
       content: '';
       position: absolute;
       top: 0; bottom: 0;
-      width: 48px;
+      width: 72px;
       z-index: 30;
       pointer-events: none;
     }
-    .card::before {
-      left: 0;
-      background: linear-gradient(to right, black 40%, transparent);
-    }
-    .card::after {
-      right: 0;
-      background: linear-gradient(to left, black 40%, transparent);
+    .card-horizontal::before { left: 0;  background: linear-gradient(to right, black 30%, transparent); }
+    .card-horizontal::after  { right: 0; background: linear-gradient(to left,  black 30%, transparent); }
+
+    .fade-bottom-h {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 20%;
+      background: linear-gradient(to bottom, transparent, black);
+      z-index: 30;
+      pointer-events: none;
     }
 
-    .value-display {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-size: 20px;
-      font-weight: 500;
-      letter-spacing: 0.01em;
-      pointer-events: none;
+    .value-display-horizontal {
       position: relative;
-      z-index: 10;
+      width: 100%;
       height: 28px;
       margin-bottom: 10px;
+      pointer-events: none;
+      z-index: 10;
     }
+    .value-display-horizontal .label-h {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 13px;
+      color: rgba(255,255,255,0.45);
+      letter-spacing: 0.01em;
+      white-space: nowrap;
+    }
+    .value-display-horizontal .label-h-before { right: calc(50% + 27px); }
+    .value-display-horizontal .label-h-after  { left:  calc(50% + 44px); }
 
-    .value-display span {
-      display: inline-block;
-      min-width: 2ch;
+    .value-display-horizontal .val-num-h {
+      position: absolute;
+      left: 50%; top: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 20px;
+      font-weight: 500;
+      color: white;
+      letter-spacing: 0.01em;
       text-align: center;
       transition: transform 0.15s cubic-bezier(0.34,1.56,0.64,1), opacity 0.1s, color 0.2s;
     }
-
-    .value-display span.at-zero { color: #ef4444; }
-
-    @keyframes shake {
-      0%   { transform: translateX(0); }
-      15%  { transform: translateX(-5px); }
-      30%  { transform: translateX(5px); }
-      45%  { transform: translateX(-4px); }
-      60%  { transform: translateX(4px); }
-      75%  { transform: translateX(-2px); }
-      90%  { transform: translateX(2px); }
-      100% { transform: translateX(0); }
+    .value-display-horizontal .label-h-pct {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 20px;
+      font-weight: 500;
+      color: white;
+      letter-spacing: 0.01em;
+      white-space: nowrap;
     }
-    .value-display span.shake {
-      animation: shake 0.4s cubic-bezier(0.36,0.07,0.19,0.97) both;
+
+    .value-display-horizontal .val-num-h.at-zero,
+    .value-display-horizontal .label-h-pct.at-zero { color: #ef4444; }
+
+    @keyframes shake-h {
+      0%,100% { transform: translate(-50%,-50%) translateX(0); }
+      15%,75%  { transform: translate(-50%,-50%) translateX(-5px); }
+      30%,60%  { transform: translate(-50%,-50%) translateX(5px); }
+      45%      { transform: translate(-50%,-50%) translateX(-4px); }
+      90%      { transform: translate(-50%,-50%) translateX(2px); }
     }
+    @keyframes shake-pct {
+      0%,100% { transform: translateY(-50%) translateX(0); }
+      15%,75%  { transform: translateY(-50%) translateX(-5px); }
+      30%,60%  { transform: translateY(-50%) translateX(5px); }
+      45%      { transform: translateY(-50%) translateX(-4px); }
+      90%      { transform: translateY(-50%) translateX(2px); }
+    }
+    .value-display-horizontal .val-num-h.shake  { animation: shake-h   0.4s cubic-bezier(0.36,0.07,0.19,0.97) both; }
+    .value-display-horizontal .label-h-pct.shake { animation: shake-pct 0.4s cubic-bezier(0.36,0.07,0.19,0.97) both; }
 
     .slider-container {
       position: relative;
@@ -118,45 +258,29 @@
       display: flex;
       align-items: flex-start;
       padding-top: 4px;
-      gap: 0;
       will-change: transform;
     }
-
     .tick-slot {
       flex-shrink: 0;
       width: 10px;
       display: flex;
       justify-content: center;
     }
+    /* tick-slot overrides for horizontal slider sizing */
+    .tick-slot .tick-line.minor { width: 1.5px; height: 16px; box-shadow: 0 0 3px 1px rgba(255,255,255,0.15); }
+    .tick-slot .tick-line.major { width: 2px;   height: 22px; box-shadow: 0 0 4px 1px rgba(255,255,255,0.22); }
+    .tick-slot .tick-line.super { width: 2px;   height: 30px; box-shadow: 0 0 5px 2px rgba(255,255,255,0.28); }
 
-    .tick-line {
-      border-radius: 1px;
-      transition: background 0.1s;
-    }
-
-    .tick-line.minor {
-      width: 1.5px;
-      height: 16px;
+    /* shared props set once via CSS, not JS every frame */
+    .tick-slot .tick-line {
       background: #e5e7eb;
-      box-shadow: 0 0 3px 1px rgba(255,255,255,0.15);
-    }
-    .tick-line.major {
-      width: 2px;
-      height: 22px;
-      background: #e5e7eb;
-      box-shadow: 0 0 4px 1px rgba(255,255,255,0.22);
-    }
-    .tick-line.super {
-      width: 2px;
-      height: 30px;
-      background: #e5e7eb;
-      box-shadow: 0 0 5px 2px rgba(255,255,255,0.28);
+      transform-origin: center;
+      transition: transform 0.08s ease-out, opacity 0.08s ease-out;
     }
 
-    .indicator {
+    .indicator-horizontal {
       position: absolute;
-      top: 0;
-      left: 50%;
+      top: 0; left: 50%;
       transform: translateX(-50%);
       width: 2px;
       height: 100%;
@@ -164,306 +288,194 @@
       border-radius: 999px;
       z-index: 20;
       pointer-events: none;
-      box-shadow:
-        0 0 3px 1px rgba(255,255,255,0.30),
-        0 0 8px 2px rgba(255,255,255,0.12);
+      box-shadow: 0 0 3px 1px rgba(255,255,255,0.30), 0 0 8px 2px rgba(255,255,255,0.12);
     }
-
   </style>
 </head>
 <body>
 
-<div class="section-title">Original Design</div>
 <div class="card">
-  <div class="value-display"><span id="val0">0</span></div>
-  <div class="slider-container" data-slider="0">
-    <div class="tick-strip"></div>
-    <div class="indicator"></div>
+  <div class="indicator"></div>
+  <div class="value-display">
+    <span class="label label-before">Total</span>
+    <span id="val" class="val-num">0</span>
+    <span class="label label-after">classes</span>
+  </div>
+  <div class="wheel-container" id="wheelContainer">
+    <div class="wheel" id="wheel"></div>
+    <div class="color-overlay"></div>
   </div>
 </div>
 
-<div class="section-title">Giant Wheel View - Classic Spoke</div>
 <div class="card">
-  <div class="value-display"><span id="val1">0</span></div>
-  <div class="slider-container" data-slider="1">
-    <div class="tick-strip"></div>
-    <div class="indicator"></div>
+  <div class="indicator"></div>
+  <div class="value-display">
+    <span class="label label-before">Attended</span>
+    <span id="val2" class="val-num">0</span>
+    <span class="label label-after">classes</span>
+  </div>
+  <div class="wheel-container" id="wheelContainer2">
+    <div class="wheel" id="wheel2"></div>
+    <div class="color-overlay"></div>
   </div>
 </div>
 
-<div class="section-title">Giant Wheel View - Wide Arc</div>
-<div class="card">
-  <div class="value-display"><span id="val2">0</span></div>
-  <div class="slider-container" data-slider="2">
-    <div class="tick-strip"></div>
-    <div class="indicator"></div>
+<div class="card-horizontal">
+  <div class="value-display-horizontal">
+    <span class="label-h label-h-before">Target</span>
+    <span id="val3" class="val-num-h">0</span>
+    <span class="label-h label-h-pct">%</span>
+    <span class="label-h label-h-after">attendance</span>
   </div>
-</div>
-
-<div class="section-title">3D Wide Arc - Layered Depth</div>
-<div class="card">
-  <div class="value-display"><span id="val3">0</span></div>
-  <div class="slider-container" data-slider="3">
-    <div class="tick-strip"></div>
-    <div class="indicator"></div>
+  <div class="slider-container" id="sliderContainer3">
+    <div class="tick-strip" id="tickStrip3"></div>
+    <div class="indicator-horizontal"></div>
   </div>
-</div>
-
-<div class="section-title">3D Wide Arc - Perspective Tilt</div>
-<div class="card">
-  <div class="value-display"><span id="val4">0</span></div>
-  <div class="slider-container" data-slider="4">
-    <div class="tick-strip"></div>
-    <div class="indicator"></div>
-  </div>
-</div>
-
-<div class="section-title">3D Wide Arc - Chromatic Depth</div>
-<div class="card">
-  <div class="value-display"><span id="val5">0</span></div>
-  <div class="slider-container" data-slider="5">
-    <div class="tick-strip"></div>
-    <div class="indicator"></div>
-  </div>
+  <div class="fade-bottom-h"></div>
 </div>
 
 <script>
-  const TICK_COUNT   = 101;
-  const MAX_VALUE    = 100;
-  const TICK_PX      = 10;
-  const MAX_OFFSET   = MAX_VALUE * TICK_PX;
-  const RUBBER_MAX   = 28;
-  const PAD = 20;
+  // ── Shared constants ──
+  const TICK_COUNT  = 100;
+  const SNAP_ANGLE  = 360 / TICK_COUNT;
+  const RUBBER_MAX  = 12;
 
-  const sliders = [];
+  // ── Audio / haptic ──
+  let audioCtx = null;
+  function getAudioCtx() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+  }
+  function playTick() {
+    try {
+      const ctx = getAudioCtx();
+      [[900, 0.1], [450, 0.06]].forEach(([f, vol]) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'sine'; o.frequency.value = f;
+        g.gain.setValueAtTime(vol, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.035);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(); o.stop(ctx.currentTime + 0.035);
+      });
+    } catch(e) {}
+  }
+  function triggerHaptic() {
+    if (navigator.vibrate) navigator.vibrate([14, 4, 14]);
+  }
 
-  function createSlider(index) {
-    const container = document.querySelector(`[data-slider="${index}"]`);
-    const strip = container.querySelector('.tick-strip');
-    const valEl = document.getElementById(`val${index}`);
+  // ── Radial slider factory ──
+  function createSlider({ wheelEl, valEl, containerEl, getMaxValue, onValueSettle }) {
+    const settle = onValueSettle || (() => {});
 
-    let offsetPx = 0;
-    let isDragging = false;
-    let lastClientX = 0;
-    let lastMoveTime = 0;
-    let velocityPxS = 0;
-    let momentumRAF = null;
-    let rubberOffset = 0;
-    let rubberRafId = null;
+    // Build ticks
+    const frag = document.createDocumentFragment();
+    for (let i = 0; i < TICK_COUNT; i++) {
+      const tick = document.createElement('div');
+      tick.className = 'tick';
+      tick.style.transform = `rotate(${i * SNAP_ANGLE}deg)`;
+      const line = document.createElement('div');
+      line.className = 'tick-line ' + (i % 10 === 0 ? 'super' : i % 5 === 0 ? 'major' : 'minor');
+      tick.appendChild(line);
+      frag.appendChild(tick);
+    }
+    wheelEl.appendChild(frag);
+
+    let accumulatedRotation = 0;
+    let isDragging    = false;
+    let lastClientX   = 0;
+    let lastMoveTime  = 0;
+    let velocityDps   = 0;
+    let momentumRAF   = null;
+    let rubberAnchorX = null;
+    let rubberOffset  = 0;
+    let rubberRafId   = null;
     let shakeDebounce = false;
     let lastDisplayedValue = 0;
-    let lastTickValue = 0;
+    let lastTickValue      = 0;
 
-    function makeTick(globalIndex) {
-      const slot = document.createElement('div');
-      slot.className = 'tick-slot';
-      const line = document.createElement('div');
-      line.className = 'tick-line';
-      const mod = ((globalIndex % 10) + 10) % 10;
-      if      (mod === 0) line.classList.add('super');
-      else if (mod === 5) line.classList.add('major');
-      else                line.classList.add('minor');
-      if (globalIndex < 0 || globalIndex >= TICK_COUNT) {
-        line.style.opacity = '0.95';
-      }
-      slot.appendChild(line);
-      return slot;
+    const maxRot = () => getMaxValue() * SNAP_ANGLE;
+
+    function getValueFromRotation(rot) {
+      return Math.max(0, Math.min(getMaxValue(), Math.round(rot / SNAP_ANGLE)));
     }
 
-    for (let i = -PAD; i < TICK_COUNT + PAD; i++) {
-      strip.appendChild(makeTick(i));
-    }
-    strip.style.marginLeft = `${-PAD * TICK_PX}px`;
-
-    function apply3DEffect() {
-      const containerWidth = container.offsetWidth;
-      const centerX = containerWidth / 2;
-      const slots = strip.querySelectorAll('.tick-slot');
-      const containerRect = container.getBoundingClientRect();
-
-      slots.forEach((slot, idx) => {
-        const line = slot.querySelector('.tick-line');
-        const slotRect = slot.getBoundingClientRect();
-        const slotCenterX = slotRect.left - containerRect.left + slotRect.width / 2;
-        const distanceFromCenter = Math.abs(centerX - slotCenterX);
-        const maxDistance = containerWidth / 2;
-        const normalizedDist = Math.min(distanceFromCenter / maxDistance, 1);
-
-        let scale = 1;
-        let opacity = 1;
-        let blur = 0;
-        let rotation = 0;
-        let yOffset = 0;
-
-        if (index === 0) {
-          scale = 1;
-          opacity = 1;
-        }
-        else if (index === 1) {
-          const curve = Math.cos(normalizedDist * Math.PI / 2);
-          scale = 0.2 + curve * 0.8;
-          opacity = 0.25 + curve * 0.75;
-        }
-        else if (index === 2) {
-          const wideCurve = Math.pow(Math.cos(normalizedDist * Math.PI / 2.5), 0.7);
-          scale = 0.3 + wideCurve * 0.7;
-          opacity = 0.35 + wideCurve * 0.65;
-        }
-        else if (index === 3) {
-          const layeredCurve = Math.pow(Math.cos(normalizedDist * Math.PI / 2.5), 0.7);
-          scale = 0.25 + layeredCurve * 0.75;
-          opacity = 0.3 + layeredCurve * 0.7;
-          blur = normalizedDist * 2.5;
-          yOffset = normalizedDist * 8;
-        }
-        else if (index === 4) {
-          const perspectiveCurve = Math.pow(Math.cos(normalizedDist * Math.PI / 2.5), 0.8);
-          scale = 0.28 + perspectiveCurve * 0.72;
-          opacity = 0.32 + perspectiveCurve * 0.68;
-          rotation = normalizedDist * 15 * (slotCenterX < centerX ? 1 : -1);
-          yOffset = normalizedDist * 6;
-        }
-        else if (index === 5) {
-          const chromaticCurve = Math.pow(Math.cos(normalizedDist * Math.PI / 2.5), 0.75);
-          scale = 0.32 + chromaticCurve * 0.68;
-          opacity = 0.35 + chromaticCurve * 0.65;
-          blur = normalizedDist * 1.8;
-          const hueShift = normalizedDist * 120;
-          line.style.filter = `blur(${blur}px) hue-rotate(${hueShift}deg)`;
-        }
-
-        line.style.transform = `scaleY(${scale}) translateY(${yOffset}px) rotateZ(${rotation}deg)`;
-        if (index !== 5) {
-          line.style.filter = `blur(${blur}px)`;
-        }
-        line.style.opacity = opacity;
-        line.style.transformOrigin = 'center';
-        line.style.transition = 'transform 0.08s ease-out, opacity 0.08s ease-out, filter 0.08s ease-out';
-      });
-    }
-
-    function getValueFromOffset(px) {
-      return Math.max(0, Math.min(MAX_VALUE, Math.round(px / TICK_PX)));
-    }
-
-    function snapToNearest(px) {
-      const clamped = Math.max(0, Math.min(MAX_OFFSET, px));
-      return Math.round(clamped / TICK_PX) * TICK_PX;
-    }
-
-    function applyVisualOffset(logical, extra = 0, animate = false) {
-      strip.style.transition = animate
-        ? 'transform 0.35s cubic-bezier(0.34,1.2,0.64,1)'
-        : 'none';
-      strip.style.transform = `translateX(${-(logical + extra)}px)`;
-      if (index > 0) {
-        requestAnimationFrame(apply3DEffect);
-      }
+    function applyVisualRotation(logical, extra = 0, animate = false) {
+      wheelEl.style.transition = animate ? 'transform 0.35s cubic-bezier(0.34,1.2,0.64,1)' : 'none';
+      wheelEl.style.transform  = `rotate(${-(logical + extra)}deg)`;
     }
 
     function updateDisplay(val) {
-      if (val !== lastDisplayedValue) {
-        valEl.style.transform = 'scale(1.2)';
-        valEl.style.opacity = '0.7';
-        setTimeout(() => {
-          valEl.textContent = val;
-          valEl.style.transform = 'scale(1)';
-          valEl.style.opacity = '1';
-        }, 60);
-        lastDisplayedValue = val;
-      }
-      if (val !== lastDisplayedValue && Math.abs(val - lastTickValue) >= 1) {
-        playTick();
-        triggerHaptic();
-        lastTickValue = val;
-      }
+      if (val === lastDisplayedValue) return;
+      if (Math.abs(val - lastTickValue) >= 1) { playTick(); triggerHaptic(); lastTickValue = val; }
+      valEl.style.transform = 'translate(-50%,-50%) scale(1.2)';
+      valEl.style.opacity   = '0.7';
+      setTimeout(() => {
+        valEl.textContent     = val;
+        valEl.style.transform = 'translate(-50%,-50%) scale(1)';
+        valEl.style.opacity   = '1';
+      }, 60);
+      lastDisplayedValue = val;
+    }
+
+    function snapToNearest(rot) {
+      const c = Math.max(0, Math.min(maxRot(), rot));
+      return Math.round(c / SNAP_ANGLE) * SNAP_ANGLE;
     }
 
     function animateRubberReturn() {
       if (rubberRafId) cancelAnimationFrame(rubberRafId);
-      const startOffset = rubberOffset;
-      const startTime = performance.now();
-      const duration = 350;
-
+      const start = rubberOffset, t0 = performance.now(), dur = 420;
       function step(now) {
-        const t = Math.min((now - startTime) / duration, 1);
-        const eased = t === 1 ? 0 : startOffset * (1 - Math.pow(2, -10 * t));
-        rubberOffset = eased;
-        applyVisualOffset(offsetPx, rubberOffset);
-        if (t < 1) rubberRafId = requestAnimationFrame(step);
-        else { rubberOffset = 0; applyVisualOffset(offsetPx); }
+        const t     = Math.min((now - t0) / dur, 1);
+        rubberOffset = start * (1 - (1 - Math.pow(1 - t, 3)));
+        applyVisualRotation(0, rubberOffset);
+        rubberRafId = t < 1 ? requestAnimationFrame(step) : (rubberOffset = 0, applyVisualRotation(0), null);
       }
       rubberRafId = requestAnimationFrame(step);
     }
 
-    function triggerBoundaryFeedback(direction) {
-      const PUSH = 8;
-      rubberOffset = direction * -PUSH;
-      applyVisualOffset(offsetPx, rubberOffset);
-      setTimeout(() => animateRubberReturn(), 30);
-
-      if (!shakeDebounce) {
-        shakeDebounce = true;
-        valEl.classList.add('at-zero', 'shake');
-        valEl.textContent = '0';
-        lastDisplayedValue = 0;
-        setTimeout(() => {
-          valEl.classList.remove('shake');
-          setTimeout(() => valEl.classList.remove('at-zero'), 600);
-          shakeDebounce = false;
-        }, 420);
-      }
+    function triggerBoundaryFeedback() {
+      rubberOffset = -6;
+      applyVisualRotation(0, rubberOffset);
+      setTimeout(animateRubberReturn, 30);
     }
 
-    function startMomentum(initialVelPxS) {
+    function finishMomentum(rot) {
+      const snapped = snapToNearest(rot);
+      accumulatedRotation = snapped;
+      applyVisualRotation(snapped, 0, true);
+      const v = getValueFromRotation(snapped);
+      updateDisplay(v);
+      settle(v);
+    }
+
+    function startMomentum(initialVel) {
       if (momentumRAF) cancelAnimationFrame(momentumRAF);
-      if (Math.abs(initialVelPxS) < 30) {
-        const snapped = snapToNearest(offsetPx);
-        offsetPx = snapped;
-        applyVisualOffset(snapped, 0, true);
-        updateDisplay(getValueFromOffset(snapped));
-        return;
-      }
+      if (Math.abs(initialVel) < 30) { finishMomentum(accumulatedRotation); return; }
 
-      let vel = initialVelPxS;
-      const FRICTION = 0.92;
-      const MIN_VEL = 15;
-      let lastTime = performance.now();
-
+      let vel = initialVel, lastTime = performance.now();
       function step(now) {
-        const dt = Math.min((now - lastTime) / 1000, 0.05);
-        lastTime = now;
-        const delta = vel * dt;
-        const newOff = offsetPx + delta;
+        const dt     = Math.min((now - lastTime) / 1000, 0.05);
+        lastTime     = now;
+        const newRot = accumulatedRotation + vel * dt;
 
-        if (newOff < 0) {
-          offsetPx = 0;
-          applyVisualOffset(0);
-          updateDisplay(0);
-          triggerBoundaryFeedback(-1);
+        if (newRot < 0) {
+          accumulatedRotation = 0;
+          applyVisualRotation(0); updateDisplay(0);
+          triggerBoundaryFeedback(); settle(0);
           return;
         }
-        if (newOff > MAX_OFFSET) {
-          offsetPx = MAX_OFFSET;
-          applyVisualOffset(MAX_OFFSET);
-          updateDisplay(MAX_VALUE);
+        if (newRot > maxRot()) {
+          accumulatedRotation = maxRot();
+          applyVisualRotation(maxRot()); updateDisplay(getMaxValue());
           return;
         }
-
-        offsetPx = newOff;
-        applyVisualOffset(offsetPx);
-        updateDisplay(getValueFromOffset(offsetPx));
-
-        vel *= FRICTION;
-
-        if (Math.abs(vel) > MIN_VEL) {
-          momentumRAF = requestAnimationFrame(step);
-        } else {
-          const snapped = snapToNearest(offsetPx);
-          offsetPx = snapped;
-          applyVisualOffset(snapped, 0, true);
-          updateDisplay(getValueFromOffset(snapped));
-        }
+        accumulatedRotation = newRot;
+        applyVisualRotation(accumulatedRotation);
+        updateDisplay(getValueFromRotation(accumulatedRotation));
+        vel *= 0.92;
+        momentumRAF = Math.abs(vel) > 15 ? requestAnimationFrame(step) : (finishMomentum(accumulatedRotation), null);
       }
       momentumRAF = requestAnimationFrame(step);
     }
@@ -471,131 +483,295 @@
     function onDragStart(clientX) {
       if (momentumRAF) { cancelAnimationFrame(momentumRAF); momentumRAF = null; }
       if (rubberRafId) { cancelAnimationFrame(rubberRafId); rubberRafId = null; }
-      rubberOffset = 0;
+      rubberOffset = 0; rubberAnchorX = null;
       isDragging = true;
       lastClientX = clientX;
       lastMoveTime = performance.now();
-      velocityPxS = 0;
-      offsetPx = snapToNearest(offsetPx);
+      velocityDps  = 0;
+      accumulatedRotation = snapToNearest(accumulatedRotation);
     }
 
     function onDragMove(clientX) {
       if (!isDragging) return;
-
-      const now = performance.now();
-      const dt = Math.max(now - lastMoveTime, 1);
-      const moveDx = clientX - lastClientX;
-
-      const speed = Math.abs(moveDx) / dt;
-      const SENS_MIN = 1.0, SENS_MAX = 5.0, SPEED_SCALE = 1.5;
-      const sensitivity = SENS_MIN + (SENS_MAX - SENS_MIN) * Math.min(speed / SPEED_SCALE, 1);
-
-      const rawDelta = -moveDx * sensitivity;
-      const desired = offsetPx + rawDelta;
+      const now  = performance.now();
+      const dt   = Math.max(now - lastMoveTime, 1);
+      const dx   = clientX - lastClientX;
+      const spd  = Math.abs(dx) / dt;
+      const sens = 1.0 + 4.0 * Math.min(spd / 1.5, 1);
+      const delta = -dx * (SNAP_ANGLE / 10) * sens;
+      const desired = accumulatedRotation + delta;
 
       if (desired < 0) {
-        const overshoot = Math.abs(desired);
-        rubberOffset = -Math.min(RUBBER_MAX * (1 - Math.exp(-overshoot / (RUBBER_MAX * 2))), RUBBER_MAX);
-        applyVisualOffset(0, rubberOffset);
+        accumulatedRotation = 0;
+        if (rubberAnchorX === null) { rubberAnchorX = clientX; settle(0); }
+        rubberOffset = RUBBER_MAX * (1 - Math.exp(-Math.max(0, clientX - rubberAnchorX) / 40));
+        applyVisualRotation(0, rubberOffset);
         updateDisplay(0);
-      } else if (desired > MAX_OFFSET) {
-        offsetPx = MAX_OFFSET;
+        if (!shakeDebounce) {
+          shakeDebounce = true;
+          valEl.classList.add('at-zero', 'shake');
+          setTimeout(() => {
+            valEl.classList.remove('shake');
+            setTimeout(() => valEl.classList.remove('at-zero'), 600);
+            shakeDebounce = false;
+          }, 420);
+        }
+      } else if (desired > maxRot()) {
+        accumulatedRotation = maxRot();
         rubberOffset = 0;
-        applyVisualOffset(MAX_OFFSET);
-        updateDisplay(MAX_VALUE);
+        applyVisualRotation(maxRot());
+        updateDisplay(getMaxValue());
       } else {
-        rubberOffset = 0;
-        offsetPx = desired;
-        applyVisualOffset(offsetPx);
-        updateDisplay(getValueFromOffset(offsetPx));
+        rubberAnchorX = null; rubberOffset = 0;
+        accumulatedRotation = desired;
+        applyVisualRotation(accumulatedRotation);
+        updateDisplay(getValueFromRotation(accumulatedRotation));
       }
 
-      const rawVelPxS = -moveDx * sensitivity / (dt / 1000);
-      velocityPxS = velocityPxS * 0.6 + rawVelPxS * 0.4;
-
-      lastClientX = clientX;
+      velocityDps = velocityDps * 0.6 + (-dx * (SNAP_ANGLE / 10) * sens / (dt / 1000)) * 0.4;
+      lastClientX  = clientX;
       lastMoveTime = now;
     }
 
     function onDragEnd() {
       if (!isDragging) return;
       isDragging = false;
-
-      if (offsetPx <= 0 && rubberOffset < 0) {
-        offsetPx = 0;
-        triggerBoundaryFeedback(-1);
-        return;
-      }
-
-      rubberOffset = 0;
-      startMomentum(velocityPxS);
+      if (accumulatedRotation === 0 && rubberOffset > 0) { rubberAnchorX = null; animateRubberReturn(); return; }
+      rubberOffset = 0; rubberAnchorX = null;
+      startMomentum(velocityDps);
     }
 
-    container.addEventListener('mousedown', e => { onDragStart(e.clientX); e.preventDefault(); });
-    const moveHandler = e => onDragMove(e.clientX);
-    const upHandler = () => onDragEnd();
-
-    container.addEventListener('touchstart', e => {
-      onDragStart(e.touches[0].clientX);
-      e.preventDefault();
-    }, { passive: false });
-
-    const touchMoveHandler = e => {
-      if (isDragging) onDragMove(e.touches[0].clientX);
-    };
-
-    container._moveHandler = moveHandler;
-    container._upHandler = upHandler;
-    container._touchMoveHandler = touchMoveHandler;
-
-    window.addEventListener('mousemove', moveHandler);
-    window.addEventListener('mouseup', upHandler);
-    window.addEventListener('touchmove', touchMoveHandler);
-    window.addEventListener('touchend', upHandler);
-
-    if (index > 0) {
-      apply3DEffect();
+    function clampToMax() {
+      const mx = maxRot();
+      if (accumulatedRotation > mx) {
+        accumulatedRotation = mx;
+        applyVisualRotation(mx, 0, true);
+        lastDisplayedValue = -1;
+        updateDisplay(getValueFromRotation(mx));
+      }
     }
 
-    return {
-      container,
-      destroy: () => {
-        window.removeEventListener('mousemove', moveHandler);
-        window.removeEventListener('mouseup', upHandler);
-        window.removeEventListener('touchmove', touchMoveHandler);
-        window.removeEventListener('touchend', upHandler);
+    containerEl.addEventListener('mousedown',  e => { onDragStart(e.clientX); e.preventDefault(); });
+    containerEl.addEventListener('touchstart', e => { onDragStart(e.touches[0].clientX); e.preventDefault(); }, { passive: false });
+
+    return { onDragMove, onDragEnd, clampToMax };
+  }
+
+  // ── Instantiate radial sliders ──
+  let s1MaxValue = 0;
+
+  const s1 = createSlider({
+    wheelEl:     document.getElementById('wheel'),
+    valEl:       document.getElementById('val'),
+    containerEl: document.getElementById('wheelContainer'),
+    getMaxValue: () => 500,
+    onValueSettle: v => { s1MaxValue = v; s2.clampToMax(); },
+  });
+
+  const s2 = createSlider({
+    wheelEl:     document.getElementById('wheel2'),
+    valEl:       document.getElementById('val2'),
+    containerEl: document.getElementById('wheelContainer2'),
+    getMaxValue: () => s1MaxValue,
+  });
+
+  window.addEventListener('mousemove', e => { s1.onDragMove(e.clientX); s2.onDragMove(e.clientX); s2.clampToMax(); });
+  window.addEventListener('mouseup',   ()  => { s1.onDragEnd(); s2.onDragEnd(); });
+  window.addEventListener('touchmove', e => { s1.onDragMove(e.touches[0].clientX); s2.onDragMove(e.touches[0].clientX); s2.clampToMax(); });
+  window.addEventListener('touchend',  ()  => { s1.onDragEnd(); s2.onDragEnd(); });
+
+  // ── Horizontal slider ──
+  const TICK_COUNT_H = 101;
+  const MAX_VALUE_H  = 100;
+  const TICK_PX      = 10;
+  const MAX_OFFSET   = MAX_VALUE_H * TICK_PX;
+  const RUBBER_MAX_H = 28;
+  const PAD          = 20;
+
+  function createHorizontalSlider() {
+    const container = document.getElementById('sliderContainer3');
+    const strip     = document.getElementById('tickStrip3');
+    const valEl     = document.getElementById('val3');
+    const pctEl     = valEl.parentElement.querySelector('.label-h-pct');
+
+    function repositionLabels() {
+      pctEl.style.left = `calc(50% + ${valEl.offsetWidth / 2}px)`;
+    }
+
+    // Build ticks
+    const frag = document.createDocumentFragment();
+    for (let i = -PAD; i < TICK_COUNT_H + PAD; i++) {
+      const slot = document.createElement('div');
+      slot.className = 'tick-slot';
+      const line = document.createElement('div');
+      const mod  = ((i % 10) + 10) % 10;
+      line.className = 'tick-line ' + (mod === 0 ? 'super' : mod === 5 ? 'major' : 'minor');
+      if (i < 0 || i >= TICK_COUNT_H) line.style.opacity = '0.95';
+      slot.appendChild(line);
+      frag.appendChild(slot);
+    }
+    strip.appendChild(frag);
+    strip.style.marginLeft = `${-PAD * TICK_PX}px`;
+
+    // Cache slot list once — avoids querySelectorAll on every frame
+    const slots = strip.querySelectorAll('.tick-slot');
+
+    function apply3DEffect() {
+      const cw   = container.offsetWidth;
+      const cx   = cw / 2;
+      const rect = container.getBoundingClientRect();
+      slots.forEach(slot => {
+        const sr   = slot.getBoundingClientRect();
+        const dist = Math.abs(cx - (sr.left - rect.left + sr.width / 2));
+        const nd   = Math.min(dist / cx, 1);
+        const cv   = Math.pow(Math.cos(nd * Math.PI / 2.5), 0.7);
+        const line = slot.firstElementChild;
+        line.style.transform = `scaleY(${0.25 + cv * 0.75}) translateY(${nd * 8}px)`;
+        line.style.opacity   = 0.3 + cv * 0.7;
+      });
+    }
+
+    const getValueFromOffset = px  => Math.max(0, Math.min(MAX_VALUE_H, Math.round(px / TICK_PX)));
+    const snapToNearest      = px  => Math.round(Math.max(0, Math.min(MAX_OFFSET, px)) / TICK_PX) * TICK_PX;
+
+    function applyVisualOffset(logical, extra = 0, animate = false) {
+      strip.style.transition = animate ? 'transform 0.35s cubic-bezier(0.34,1.2,0.64,1)' : 'none';
+      strip.style.transform  = `translateX(${-(logical + extra)}px)`;
+      requestAnimationFrame(apply3DEffect);
+    }
+
+    let offsetPx    = 0;
+    let isDragging  = false;
+    let lastClientX = 0, lastMoveTime = 0, velocityPxS = 0;
+    let momentumRAF = null, rubberOffset = 0, rubberRafId = null;
+    let shakeDebounce = false, lastDisplayedValue = 0, lastTickValue = 0;
+
+    function updateDisplay(val) {
+      if (val === lastDisplayedValue) return;
+      if (Math.abs(val - lastTickValue) >= 1) { playTick(); triggerHaptic(); lastTickValue = val; }
+      valEl.style.transform = 'translate(-50%,-50%) scale(1.2)';
+      valEl.style.opacity   = '0.7';
+      setTimeout(() => {
+        valEl.textContent     = val;
+        valEl.style.transform = 'translate(-50%,-50%) scale(1)';
+        valEl.style.opacity   = '1';
+        repositionLabels();
+      }, 60);
+      lastDisplayedValue = val;
+    }
+
+    function animateRubberReturn() {
+      if (rubberRafId) cancelAnimationFrame(rubberRafId);
+      const start = rubberOffset, t0 = performance.now(), dur = 350;
+      function step(now) {
+        const t = Math.min((now - t0) / dur, 1);
+        rubberOffset = t === 1 ? 0 : start * (1 - Math.pow(2, -10 * t));
+        applyVisualOffset(offsetPx, rubberOffset);
+        rubberRafId = t < 1 ? requestAnimationFrame(step) : (rubberOffset = 0, applyVisualOffset(offsetPx), null);
       }
-    };
+      rubberRafId = requestAnimationFrame(step);
+    }
+
+    function triggerBoundaryFeedback(dir) {
+      rubberOffset = dir * -8;
+      applyVisualOffset(offsetPx, rubberOffset);
+      setTimeout(animateRubberReturn, 30);
+      if (!shakeDebounce) {
+        shakeDebounce = true;
+        valEl.classList.add('at-zero', 'shake');
+        pctEl.classList.add('at-zero', 'shake');
+        valEl.textContent = '0'; lastDisplayedValue = 0;
+        setTimeout(() => {
+          valEl.classList.remove('shake'); pctEl.classList.remove('shake');
+          setTimeout(() => { valEl.classList.remove('at-zero'); pctEl.classList.remove('at-zero'); }, 600);
+          shakeDebounce = false;
+        }, 420);
+      }
+    }
+
+    function finishMomentum(px) {
+      const snapped = snapToNearest(px);
+      offsetPx = snapped;
+      applyVisualOffset(snapped, 0, true);
+      updateDisplay(getValueFromOffset(snapped));
+    }
+
+    function startMomentum(initialVel) {
+      if (momentumRAF) cancelAnimationFrame(momentumRAF);
+      if (Math.abs(initialVel) < 30) { finishMomentum(offsetPx); return; }
+
+      let vel = initialVel, lastTime = performance.now();
+      function step(now) {
+        const dt     = Math.min((now - lastTime) / 1000, 0.05);
+        lastTime     = now;
+        const newOff = offsetPx + vel * dt;
+
+        if (newOff < 0) {
+          offsetPx = 0; applyVisualOffset(0); updateDisplay(0);
+          triggerBoundaryFeedback(-1); return;
+        }
+        if (newOff > MAX_OFFSET) {
+          offsetPx = MAX_OFFSET; applyVisualOffset(MAX_OFFSET); updateDisplay(MAX_VALUE_H); return;
+        }
+        offsetPx = newOff;
+        applyVisualOffset(offsetPx);
+        updateDisplay(getValueFromOffset(offsetPx));
+        vel *= 0.92;
+        momentumRAF = Math.abs(vel) > 15 ? requestAnimationFrame(step) : (finishMomentum(offsetPx), null);
+      }
+      momentumRAF = requestAnimationFrame(step);
+    }
+
+    function onDragStart(clientX) {
+      if (momentumRAF) { cancelAnimationFrame(momentumRAF); momentumRAF = null; }
+      if (rubberRafId) { cancelAnimationFrame(rubberRafId); rubberRafId = null; }
+      rubberOffset = 0; isDragging = true;
+      lastClientX = clientX; lastMoveTime = performance.now(); velocityPxS = 0;
+      offsetPx = snapToNearest(offsetPx);
+    }
+
+    function onDragMove(clientX) {
+      if (!isDragging) return;
+      const now  = performance.now();
+      const dt   = Math.max(now - lastMoveTime, 1);
+      const dx   = clientX - lastClientX;
+      const sens = 1.0 + 4.0 * Math.min(Math.abs(dx) / dt / 1.5, 1);
+      const desired = offsetPx + (-dx * sens);
+
+      if (desired < 0) {
+        rubberOffset = -Math.min(RUBBER_MAX_H * (1 - Math.exp(-Math.abs(desired) / (RUBBER_MAX_H * 2))), RUBBER_MAX_H);
+        applyVisualOffset(0, rubberOffset); updateDisplay(0);
+      } else if (desired > MAX_OFFSET) {
+        offsetPx = MAX_OFFSET; rubberOffset = 0;
+        applyVisualOffset(MAX_OFFSET); updateDisplay(MAX_VALUE_H);
+      } else {
+        rubberOffset = 0; offsetPx = desired;
+        applyVisualOffset(offsetPx); updateDisplay(getValueFromOffset(offsetPx));
+      }
+
+      velocityPxS  = velocityPxS * 0.6 + (-dx * sens / (dt / 1000)) * 0.4;
+      lastClientX  = clientX; lastMoveTime = now;
+    }
+
+    function onDragEnd() {
+      if (!isDragging) return;
+      isDragging = false;
+      if (offsetPx <= 0 && rubberOffset < 0) { offsetPx = 0; triggerBoundaryFeedback(-1); return; }
+      rubberOffset = 0; startMomentum(velocityPxS);
+    }
+
+    container.addEventListener('mousedown',  e => { onDragStart(e.clientX); e.preventDefault(); });
+    container.addEventListener('touchstart', e => { onDragStart(e.touches[0].clientX); e.preventDefault(); }, { passive: false });
+    window.addEventListener('mousemove', e => { if (isDragging) onDragMove(e.clientX); });
+    window.addEventListener('mouseup',   ()  => onDragEnd());
+    window.addEventListener('touchmove', e => { if (isDragging) onDragMove(e.touches[0].clientX); });
+    window.addEventListener('touchend',  ()  => onDragEnd());
+
+    apply3DEffect();
+    repositionLabels();
   }
 
-  for (let i = 0; i < 6; i++) {
-    sliders.push(createSlider(i));
-  }
-
-  let audioCtx = null;
-  let selectedSound = 5;
-
-  function getAudioCtx() {
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    return audioCtx;
-  }
-
-  const SOUNDS = [
-    { fn: (ctx) => { const o=ctx.createOscillator(),g=ctx.createGain(); o.type='sine'; o.frequency.setValueAtTime(800,ctx.currentTime); g.gain.setValueAtTime(0.18,ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+0.04); o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime+0.04); } },
-    { fn: (ctx) => { const o=ctx.createOscillator(),g=ctx.createGain(); o.type='sine'; o.frequency.setValueAtTime(180,ctx.currentTime); o.frequency.exponentialRampToValueAtTime(80,ctx.currentTime+0.06); g.gain.setValueAtTime(0.22,ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+0.06); o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime+0.07); } },
-    { fn: (ctx) => { const o=ctx.createOscillator(),g=ctx.createGain(); o.type='sine'; o.frequency.setValueAtTime(1200,ctx.currentTime); g.gain.setValueAtTime(0.12,ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+0.035); o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime+0.035); } },
-    { fn: (ctx) => { const o=ctx.createOscillator(),g=ctx.createGain(); o.type='sine'; o.frequency.value=440; g.gain.setValueAtTime(0.12,ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+0.08); o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime+0.08); } },
-    { fn: (ctx) => { const o=ctx.createOscillator(),g=ctx.createGain(); o.type='triangle'; o.frequency.value=200; g.gain.setValueAtTime(0.28,ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+0.035); o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime+0.035); } },
-    { fn: (ctx) => { [[900,0.1],[450,0.06]].forEach(([f,vol]) => { const o=ctx.createOscillator(),g=ctx.createGain(); o.type='sine'; o.frequency.value=f; g.gain.setValueAtTime(vol,ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+0.035); o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime+0.035); }); } },
-  ];
-
-  function playTick() {
-    try { SOUNDS[selectedSound].fn(getAudioCtx()); } catch(e) {}
-  }
-  function triggerHaptic() {
-    if (navigator.vibrate) navigator.vibrate([14,4,14]);
-  }
+  createHorizontalSlider();
 </script>
 </body>
 </html>
