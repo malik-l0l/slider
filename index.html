@@ -3,273 +3,250 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Attendance — Cell Slider v2</title>
+  <title>Attendance Calculator</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500&display=swap');
+
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg: #111113;
-      --card: #000;
-      --border: rgba(255,255,255,0.07);
-      --t1: rgba(255,255,255,1);
-      --t2: rgba(255,255,255,0.5);
-      --t3: rgba(255,255,255,0.25);
+      --bg: #111113; --card: #000; --border: rgba(255,255,255,0.07);
+      --t2: rgba(255,255,255,0.5); --t3: rgba(255,255,255,0.25);
       --mono: 'DM Mono', monospace;
     }
 
     body {
       background: var(--bg);
-      font-family: 'DM Sans', sans-serif;
-      color: white;
-      padding: 24px 16px 60px;
+      font-family: 'Plus Jakarta Sans', 'DM Sans', sans-serif;
+      color: #fff;
       display: flex;
       flex-direction: column;
       align-items: center;
+      gap: 20px;
+      padding: 28px 16px 60px;
+      min-height: 100dvh;
     }
 
-    /* Controls */
-    .controls {
-      width: 100%; max-width: 420px;
-      background: rgba(255,255,255,0.03);
-      border: 1px solid var(--border);
-      border-radius: 14px; padding: 14px;
-      display: flex; flex-direction: column; gap: 10px;
-      margin-bottom: 20px;
-    }
-    .ctrl-title { font-size: 9px; font-weight: 700; color: var(--t3); text-transform: uppercase; letter-spacing: 0.1em; }
-    .ctrl-row { display: flex; align-items: center; gap: 10px; }
-    .ctrl-row label { font-size: 11px; color: var(--t2); width: 64px; flex-shrink: 0; }
-    .ctrl-row input[type=range] { flex: 1; accent-color: white; cursor: pointer; }
-    .ctrl-v { font-size: 12px; font-weight: 600; color: white; width: 34px; text-align: right; font-family: var(--mono); }
-
-    /* ── Card H ── */
-    .vH {
-      width: 100%; max-width: 420px;
-      background: var(--card);
-      border-radius: 20px;
-      padding: 18px 16px 20px;
-    }
-
-    /* Header row */
-    .vH-head {
-      display: flex; justify-content: space-between; align-items: flex-end;
-      margin-bottom: 16px;
-    }
-    .vH-pct {
-      font-size: 42px; font-weight: 700;
-      letter-spacing: -0.05em; line-height: 1;
-    }
-    .vH-pct sup { font-size: 16px; font-weight: 400; opacity: 0.35; }
+    /* ─── DISPLAY CARD ─── */
+    .vH { width: 100%; max-width: 384px; background: var(--card); border-radius: 20px; padding: 18px 16px 20px; }
+    .vH-head { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 16px; }
+    .vH-pct { font-family: 'DM Sans', sans-serif; font-size: 42px; font-weight: 700; letter-spacing: -.05em; line-height: 1; }
+    .vH-pct sup { font-size: 16px; font-weight: 400; opacity: .35; }
     .vH-head-r { text-align: right; }
-    .vH-badge {
-      font-size: 11px; font-weight: 600;
-      padding: 4px 9px; border-radius: 6px;
-      display: inline-block; margin-bottom: 4px;
-    }
-    .vH-frac {
-      font-size: 11px; font-family: var(--mono); color: var(--t2); padding-right: 5px;
-      transition: opacity 0.25s ease;
-    }
-    /* arrow in frac */
-    .vH-frac .frac-arrow { color: rgba(255,255,255,0.3); margin: 0 3px; }
-    .vH-frac .frac-to { transition: color 0.25s ease; }
-
-    /* ── Scroll wrap with side fades ── */
-    .vH-scroll-outer {
-      position: relative;
-      margin: 0 -4px;
-    }
-    /* FIX 3: fade masks on left and right */
-    .vH-scroll-outer::before,
-    .vH-scroll-outer::after {
-      content: '';
-      position: absolute;
-      top: 0; bottom: 6px;
-      width: 28px;
-      pointer-events: none;
-      z-index: 2;
-      transition: opacity 0.2s ease;
-    }
-    .vH-scroll-outer::before {
-      left: 0;
-      background: linear-gradient(to right, #000 0%, transparent 100%);
-      opacity: 0; /* hidden until scrolled */
-    }
-    .vH-scroll-outer::after {
-      right: 0;
-      background: linear-gradient(to left, #000 0%, transparent 100%);
-      opacity: 1;
-    }
-    .vH-scroll-outer.at-start::before { opacity: 0; }
-    .vH-scroll-outer.at-end::after   { opacity: 0; }
+    .vH-badge { font-size: 11px; font-weight: 600; padding: 4px 9px; border-radius: 6px; display: inline-block; margin-bottom: 4px; }
+    .vH-frac { font-size: 11px; font-family: var(--mono); color: var(--t2); padding-right: 5px; transition: opacity .25s ease; }
+    .vH-frac .frac-arrow { color: rgba(255,255,255,.3); margin: 0 3px; }
+    .vH-frac .frac-to { transition: color .25s ease; }
+    .vH-scroll-outer { position: relative; margin: 0 -4px; }
+    .vH-scroll-outer::before, .vH-scroll-outer::after { content: ''; position: absolute; top: 0; bottom: 6px; width: 28px; pointer-events: none; z-index: 2; transition: opacity .2s ease; }
+    .vH-scroll-outer::before { left: 0; background: linear-gradient(to right, #000, transparent); opacity: 0; }
+    .vH-scroll-outer::after  { right: 0; background: linear-gradient(to left, #000, transparent); opacity: 1; }
+    .vH-scroll-outer.at-end::after { opacity: 0; }
     .vH-scroll-outer.scrolled::before { opacity: 1; }
-
-    .vH-scroll-wrap {
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      padding: 0 4px 6px;
-      scrollbar-width: none;
-      -ms-overflow-style: none;
-    }
+    .vH-scroll-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 0 4px 6px; scrollbar-width: none; -ms-overflow-style: none; }
     .vH-scroll-wrap::-webkit-scrollbar { display: none; }
-
-    .vH-cells {
-      display: flex; gap: 3px;
-      width: max-content;
-      min-width: 100%;
-    }
-
-    /* Each column */
-    .vH-cell-col {
-      display: flex; flex-direction: column; align-items: center; gap: 3px;
-      flex-shrink: 0;
-    }
-    .vH-cell-top {
-      font-size: 9px; font-weight: 600; font-family: var(--mono);
-      line-height: 1; min-height: 11px; text-align: center;
-      white-space: nowrap;
-    }
-    .vH-cell-sq {
-      width: 34px; height: 34px; border-radius: 5px;
-      display: flex; align-items: center; justify-content: center;
-      position: relative; flex-shrink: 0;
-      cursor: default;
-    }
-    .vH-cell-sq-inner {
-      width: 100%; height: 100%; border-radius: 5px;
-      transition: background 0.3s ease;
-    }
-    .vH-cell-bot {
-      font-size: 9px; font-family: var(--mono);
-      line-height: 1; text-align: center;
-      white-space: nowrap; min-height: 11px;
-    }
-
-    /* Target ring */
-    .vH-cell-col.is-target .vH-cell-sq {
-      outline: 2px solid rgba(255,255,255,0.5);
-      outline-offset: 1px;
-    }
-
-    /* Divider */
-    .vH-divider {
-      height: 1px;
-      background: var(--border);
-      margin: 14px 0 12px;
-    }
-
-    /* ── Carousel action zone ── */
-    .vH-carousel {
-      position: relative;
-      overflow: hidden; /* clip sliding panels */
-      /* FIX 4: stable height — reserve space for 1 action row + dots */
-      min-height: 52px;
-    }
-
-    /* slides container */
-    .vH-slides {
-      display: flex;
-      width: 200%; /* two slides */
-      transition: transform 0.32s cubic-bezier(0.4,0,0.2,1);
-    }
-    .vH-slides.single {
-      width: 100%;
-    }
-
-    /* individual slide */
-    .vH-slide {
-      width: 50%;
-      flex-shrink: 0;
-    }
-    .vH-slides.single .vH-slide {
-      width: 100%;
-    }
-
-    /* action row inside slide */
-    .vH-action-row {
-      display: flex; align-items: center; gap: 10px;
-    }
-    .vH-action-icon {
-      font-size: 15px; width: 24px; text-align: center;
-      flex-shrink: 0; line-height: 1;
-    }
-    .vH-action-text {
-      flex: 1; font-size: 12px; color: var(--t2); line-height: 1.4;
-    }
-    .vH-action-text strong { color: white; font-weight: 700; }
-    .vH-action-num {
-      font-size: 22px; font-weight: 700;
-      font-family: var(--mono); flex-shrink: 0;
-      min-width: 32px; text-align: right;
-    }
-
-    /* convince teacher dimmed */
-    .vH-slide.secondary .vH-action-text { color: rgba(255,255,255,0.35); }
-    .vH-slide.secondary .vH-action-text strong { color: rgba(255,255,255,0.6); }
-    .vH-slide.secondary .vH-action-num { color: rgba(255,255,255,0.3); font-size: 18px; }
-
-    /* ── Dot indicators ── */
-    .vH-dots {
-      display: flex; justify-content: center; align-items: center;
-      gap: 6px;
-      margin-top: 12px;
-    }
-    .vH-dot {
-      width: 5px; height: 5px; border-radius: 50%;
-      background: rgba(255,255,255,0.25);
-      border: none;
-      transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
-      cursor: pointer;
-      flex-shrink: 0;
-    }
-    .vH-dot.active {
-      width: 18px; height: 5px; border-radius: 3px;
-      background: white;
-    }
-    /* hide dots when only 1 slide */
+    .vH-cells { display: flex; gap: 3px; width: max-content; min-width: 100%; }
+    .vH-cell-col { display: flex; flex-direction: column; align-items: center; gap: 3px; flex-shrink: 0; }
+    .vH-cell-top { font-family: var(--mono); font-size: 9px; font-weight: 600; line-height: 1; min-height: 11px; text-align: center; white-space: nowrap; }
+    .vH-cell-sq { width: 34px; height: 34px; border-radius: 5px; display: flex; align-items: center; justify-content: center; position: relative; flex-shrink: 0; cursor: default; }
+    .vH-cell-sq-inner { width: 100%; height: 100%; border-radius: 5px; transition: background .3s ease; }
+    .vH-cell-bot { font-size: 9px; font-family: var(--mono); line-height: 1; text-align: center; white-space: nowrap; min-height: 11px; }
+    .vH-cell-col.is-target .vH-cell-sq { outline: 2px solid rgba(255,255,255,.5); outline-offset: 1px; }
+    .vH-divider { height: 1px; background: var(--border); margin: 14px 0 12px; }
+    .vH-carousel { position: relative; overflow: hidden; min-height: 52px; }
+    .vH-slides { display: flex; width: 200%; transition: transform .32s cubic-bezier(.4,0,.2,1); }
+    .vH-slides.single { width: 100%; }
+    .vH-slide { width: 50%; flex-shrink: 0; }
+    .vH-slides.single .vH-slide { width: 100%; }
+    .vH-action-row { display: flex; align-items: center; gap: 10px; }
+    .vH-action-icon { font-size: 15px; width: 24px; text-align: center; flex-shrink: 0; line-height: 1; }
+    .vH-action-text { flex: 1; font-size: 12px; color: var(--t2); line-height: 1.4; }
+    .vH-action-text strong { color: #fff; font-weight: 700; }
+    .vH-action-num { font-size: 22px; font-weight: 700; font-family: var(--mono); flex-shrink: 0; min-width: 32px; text-align: right; }
+    .vH-dots { display: flex; justify-content: center; align-items: center; gap: 6px; margin-top: 12px; }
+    .vH-dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,.25); border: none; transition: all .3s cubic-bezier(.4,0,.2,1); cursor: pointer; flex-shrink: 0; }
+    .vH-dot.active { width: 18px; height: 5px; border-radius: 3px; background: #fff; }
     .vH-dots.hidden { display: none; }
-
-    /* swipe hint arrow — fades in briefly on first render */
-    .vH-swipe-hint {
-      position: absolute;
-      right: 0; top: 50%;
-      transform: translateY(-50%);
-      font-size: 10px;
-      color: rgba(255,255,255,0.2);
-      pointer-events: none;
-      animation: hintFade 2s ease 0.8s forwards;
-      opacity: 0;
-    }
+    .vH-swipe-hint { position: absolute; right: 0; top: 50%; transform: translateY(-50%); font-size: 10px; color: rgba(255,255,255,.2); pointer-events: none; animation: hintFade 2s ease .8s forwards; opacity: 0; }
     @keyframes hintFade {
       0%   { opacity: 0; transform: translateY(-50%) translateX(0); }
       20%  { opacity: 1; transform: translateY(-50%) translateX(-4px); }
       70%  { opacity: 1; transform: translateY(-50%) translateX(-4px); }
       100% { opacity: 0; transform: translateY(-50%) translateX(-4px); }
     }
+
+    /* ─── RADIAL SLIDER CARDS ─── */
+    .card {
+      position: relative;
+      width: 384px; height: 144px;
+      background: #000;
+      border-radius: 24px;
+      padding: 16px;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.6);
+      overflow: hidden;
+    }
+    .card::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 20%;
+      background: linear-gradient(to bottom, transparent, black);
+      z-index: 30;
+      pointer-events: none;
+    }
+    .indicator {
+      position: absolute;
+      left: 50%; top: 52px;
+      transform: translateX(-50%);
+      width: 2px; height: calc(100% - 52px);
+      background: white;
+      border-radius: 999px;
+      z-index: 20; pointer-events: none;
+      box-shadow: 0 0 3px 1px rgba(255,255,255,0.30), 0 0 8px 2px rgba(255,255,255,0.12);
+    }
+    .value-display {
+      position: relative; width: 100%; height: 28px;
+      margin-bottom: 24px; pointer-events: none; z-index: 10;
+    }
+    .value-display .label {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      font-size: 13px; color: rgba(255,255,255,0.45);
+      letter-spacing: 0.01em; white-space: nowrap;
+    }
+    .value-display .label-before { right: calc(50% + 26px); }
+    .value-display .label-after  { left:  calc(50% + 26px); }
+    .value-display .val-num {
+      position: absolute; left: 50%; top: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 20px; font-weight: 500; color: white;
+      letter-spacing: 0.01em; text-align: center;
+      transition: transform 0.15s cubic-bezier(0.34,1.56,0.64,1), opacity 0.1s, color 0.2s;
+    }
+    .value-display .val-num.at-zero { color: #ef4444; }
+    @keyframes shake {
+      0%,100% { transform: translate(-50%,-50%) translateX(0); }
+      15%,75%  { transform: translate(-50%,-50%) translateX(-5px); }
+      30%,60%  { transform: translate(-50%,-50%) translateX(5px); }
+      45%      { transform: translate(-50%,-50%) translateX(-4px); }
+      90%      { transform: translate(-50%,-50%) translateX(2px); }
+    }
+    .value-display .val-num.shake { animation: shake 0.4s cubic-bezier(0.36,0.07,0.19,0.97) both; }
+    .wheel-container {
+      position: relative; width: 100%; aspect-ratio: 1;
+      cursor: grab; user-select: none; touch-action: none;
+    }
+    .wheel-container:active { cursor: grabbing; }
+    .wheel { position: relative; width: 100%; height: 100%; border-radius: 50%; }
+    .tick {
+      position: absolute; inset: 0;
+      display: flex; justify-content: center;
+      overflow: hidden; border-radius: 50%;
+    }
+    .tick-line { position: absolute; top: 0; border-radius: 1px; }
+    .tick-line.minor { width: 1.5px; height: 18px; background: #e5e7eb; box-shadow: 0 0 3px 1px rgba(255,255,255,0.15); }
+    .tick-line.major { width: 2px;   height: 25px; background: #e5e7eb; box-shadow: 0 0 4px 1px rgba(255,255,255,0.22); }
+    .tick-line.super { width: 2px;   height: 32px; background: #e5e7eb; box-shadow: 0 0 5px 2px rgba(255,255,255,0.28); }
+    .color-overlay {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      height: calc(50% + 16px);
+      background: linear-gradient(to right, #3b82f6, #eab308);
+      mix-blend-mode: multiply; pointer-events: none; z-index: 10;
+    }
+
+    /* ─── HORIZONTAL SLIDER CARD ─── */
+    .card-horizontal {
+      position: relative;
+      width: 384px; height: 104px;
+      background: #000; border-radius: 24px;
+      padding: 16px 16px 0;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.6);
+      overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+    .card-horizontal::before, .card-horizontal::after {
+      content: ''; position: absolute;
+      top: 0; bottom: 0; width: 72px;
+      z-index: 30; pointer-events: none;
+    }
+    .card-horizontal::before { left: 0;  background: linear-gradient(to right, black 30%, transparent); }
+    .card-horizontal::after  { right: 0; background: linear-gradient(to left,  black 30%, transparent); }
+    .fade-bottom-h {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      height: 20%; background: linear-gradient(to bottom, transparent, black);
+      z-index: 30; pointer-events: none;
+    }
+    .value-display-horizontal {
+      position: relative; width: 100%; height: 28px;
+      margin-bottom: 10px; pointer-events: none; z-index: 10;
+    }
+    .value-display-horizontal .label-h {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      font-size: 13px; color: rgba(255,255,255,0.45);
+      letter-spacing: 0.01em; white-space: nowrap;
+    }
+    .value-display-horizontal .label-h-before { right: calc(50% + 27px); }
+    .value-display-horizontal .label-h-after  { left:  calc(50% + 44px); }
+    .value-display-horizontal .val-num-h {
+      position: absolute; left: 50%; top: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 20px; font-weight: 500; color: white;
+      letter-spacing: 0.01em; text-align: center;
+      transition: transform 0.15s cubic-bezier(0.34,1.56,0.64,1), opacity 0.1s, color 0.2s;
+    }
+    .value-display-horizontal .label-h-pct {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      font-size: 20px; font-weight: 500; color: white;
+      letter-spacing: 0.01em; white-space: nowrap;
+    }
+    .value-display-horizontal .val-num-h.at-zero,
+    .value-display-horizontal .label-h-pct.at-zero { color: #ef4444; }
+    @keyframes shake-h {
+      0%,100% { transform: translate(-50%,-50%) translateX(0); }
+      15%,75%  { transform: translate(-50%,-50%) translateX(-5px); }
+      30%,60%  { transform: translate(-50%,-50%) translateX(5px); }
+      45%      { transform: translate(-50%,-50%) translateX(-4px); }
+      90%      { transform: translate(-50%,-50%) translateX(2px); }
+    }
+    @keyframes shake-pct {
+      0%,100% { transform: translateY(-50%) translateX(0); }
+      15%,75%  { transform: translateY(-50%) translateX(-5px); }
+      30%,60%  { transform: translateY(-50%) translateX(5px); }
+      45%      { transform: translateY(-50%) translateX(-4px); }
+      90%      { transform: translateY(-50%) translateX(2px); }
+    }
+    .value-display-horizontal .val-num-h.shake  { animation: shake-h   0.4s cubic-bezier(0.36,0.07,0.19,0.97) both; }
+    .value-display-horizontal .label-h-pct.shake { animation: shake-pct 0.4s cubic-bezier(0.36,0.07,0.19,0.97) both; }
+    .slider-container {
+      position: relative; width: 100%; flex: 1;
+      cursor: grab; user-select: none; touch-action: none; overflow: hidden;
+    }
+    .slider-container:active { cursor: grabbing; }
+    .tick-strip {
+      position: absolute; top: 0;
+      left: calc(50% - 5px); height: 100%;
+      display: flex; align-items: flex-start;
+      padding-top: 4px; will-change: transform;
+    }
+    .tick-slot { flex-shrink: 0; width: 10px; display: flex; justify-content: center; }
+    .tick-slot .tick-line.minor { width: 1.5px; height: 16px; box-shadow: 0 0 3px 1px rgba(255,255,255,0.15); }
+    .tick-slot .tick-line.major { width: 2px;   height: 22px; box-shadow: 0 0 4px 1px rgba(255,255,255,0.22); }
+    .tick-slot .tick-line.super { width: 2px;   height: 30px; box-shadow: 0 0 5px 2px rgba(255,255,255,0.28); }
+    .tick-slot .tick-line {
+      background: #e5e7eb; transform-origin: center;
+      transition: transform 0.08s ease-out, opacity 0.08s ease-out;
+    }
+    .indicator-horizontal {
+      position: absolute; top: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 2px; height: 100%; background: white;
+      border-radius: 999px; z-index: 20; pointer-events: none;
+      box-shadow: 0 0 3px 1px rgba(255,255,255,0.30), 0 0 8px 2px rgba(255,255,255,0.12);
+    }
   </style>
 </head>
 <body>
 
-<div class="controls">
-  <div class="ctrl-title">Values</div>
-  <div class="ctrl-row">
-    <label>Total</label>
-    <input type="range" id="ctrl-total" min="1" max="120" value="60" step="1"/>
-    <span class="ctrl-v" id="ctrl-total-val">60</span>
-  </div>
-  <div class="ctrl-row">
-    <label>Attended</label>
-    <input type="range" id="ctrl-attended" min="0" max="120" value="42" step="1"/>
-    <span class="ctrl-v" id="ctrl-attended-val">42</span>
-  </div>
-  <div class="ctrl-row">
-    <label>Target %</label>
-    <input type="range" id="ctrl-target" min="1" max="100" value="75" step="1"/>
-    <span class="ctrl-v" id="ctrl-target-val">75%</span>
-  </div>
-</div>
-
+<!-- ── Display Card ── -->
 <div class="vH" id="vH">
   <div class="vH-head">
     <div class="vH-pct" id="vH-pct"></div>
@@ -278,16 +255,12 @@
       <div class="vH-frac" id="vH-frac"></div>
     </div>
   </div>
-
   <div class="vH-scroll-outer" id="vH-scroll-outer">
     <div class="vH-scroll-wrap" id="vH-scroll-wrap">
       <div class="vH-cells" id="vH-cells"></div>
     </div>
   </div>
-
   <div class="vH-divider"></div>
-
-  <!-- Carousel zone -->
   <div class="vH-carousel" id="vH-carousel">
     <div class="vH-slides" id="vH-slides">
       <div class="vH-slide" id="vH-slide-0"></div>
@@ -301,427 +274,674 @@
   </div>
 </div>
 
-<script>
-// ── State ──
-let currentSlide = 0;
-let totalSlides = 1;
-let lastCase = 'above';
-let lastS = null;
+<!-- ── Slider 1: Total Classes ── -->
+<div class="card">
+  <div class="indicator"></div>
+  <div class="value-display">
+    <span class="label label-before">Total</span>
+    <span id="val" class="val-num">12</span>
+    <span class="label label-after">classes</span>
+  </div>
+  <div class="wheel-container" id="wheelContainer">
+    <div class="wheel" id="wheel"></div>
+    <div class="color-overlay"></div>
+  </div>
+</div>
 
-// ── Calc ──
+<!-- ── Slider 2: Attended Classes ── -->
+<div class="card">
+  <div class="indicator"></div>
+  <div class="value-display">
+    <span class="label label-before">Attended</span>
+    <span id="val2" class="val-num">9</span>
+    <span class="label label-after">classes</span>
+  </div>
+  <div class="wheel-container" id="wheelContainer2">
+    <div class="wheel" id="wheel2"></div>
+    <div class="color-overlay"></div>
+  </div>
+</div>
+
+<!-- ── Slider 3: Target % ── -->
+<div class="card-horizontal">
+  <div class="value-display-horizontal">
+    <span class="label-h label-h-before">Target</span>
+    <span id="val3" class="val-num-h">75</span>
+    <span class="label-h label-h-pct">%</span>
+    <span class="label-h label-h-after">attendance</span>
+  </div>
+  <div class="slider-container" id="sliderContainer3">
+    <div class="tick-strip" id="tickStrip3"></div>
+    <div class="indicator-horizontal"></div>
+  </div>
+  <div class="fade-bottom-h"></div>
+</div>
+
+<script>
+// ════════════════════════════════════════════
+//  DEFAULTS
+// ════════════════════════════════════════════
+const DEFAULT_TOTAL    = 12;
+const DEFAULT_ATTENDED = 9;
+const DEFAULT_TARGET   = 75;
+
+// ════════════════════════════════════════════
+//  SHARED STATE (single source of truth)
+// ════════════════════════════════════════════
+let gTotal    = DEFAULT_TOTAL;
+let gAttended = DEFAULT_ATTENDED;
+let gTarget   = DEFAULT_TARGET;
+
+// ════════════════════════════════════════════
+//  CARD LOGIC
+// ════════════════════════════════════════════
+const $ = id => document.getElementById(id);
+const elPct    = $('vH-pct'),  elBadge  = $('vH-badge'), elFrac  = $('vH-frac');
+const elCells  = $('vH-cells'), elSlides = $('vH-slides'), elDots  = $('vH-dots');
+const elHint   = $('vH-swipe-hint');
+const elSlide0 = $('vH-slide-0'), elSlide1 = $('vH-slide-1');
+const elDot0   = $('dot-0'),      elDot1   = $('dot-1');
+const elOuter  = $('vH-scroll-outer'), elWrap = $('vH-scroll-wrap');
+const elCard   = $('vH');
+
+let currentSlide = 0, totalSlides = 1, lastS = null, lastCase = 'above';
+
 function calc(total, attended, target) {
-  const pct = total === 0 ? 0 : Math.round(attended / total * 100);
-  if (target === 100 && attended < total)
-    return { case:'impossible', pct, attended, total, target };
+  const pct = total ? Math.round(attended / total * 100) : 0;
+  if (target === 100 && attended < total) return { case:'impossible', pct, attended, total, target };
   if (pct < target) {
-    let an = 0;
-    while (total+an > 0 && Math.round((attended+an)/(total+an)*100) < target) an++;
-    let cn = 0;
-    while (total > 0 && Math.round((attended+cn)/total*100) < target) cn++;
+    let an = 0; while (Math.round((attended+an)/(total+an)*100) < target) an++;
+    let cn = 0; while (Math.round((attended+cn)/total*100) < target) cn++;
     return { case:'below', pct, attended, total, target, attendNeeded:an, convinceNeeded:cn };
   }
-  let b = 0;
-  while (total+b > 0 && Math.round(attended/(total+b)*100) >= target) b++;
+  let b = 0; while (total+b > 0 && Math.round(attended/(total+b)*100) >= target) b++;
   return { case:'above', pct, attended, total, target, safeBunks: Math.max(0, b-1) };
 }
 
-function col(c) {
-  if (c==='above')      return { main:'#22c55e', light:'rgba(34,197,94,0.18)',  text:'#4ade80' };
-  if (c==='impossible') return { main:'#a855f7', light:'rgba(168,85,247,0.18)', text:'#c084fc' };
-  return                       { main:'#ef4444', light:'rgba(239,68,68,0.18)',  text:'#f87171' };
-}
+const COLS = {
+  above:      { main:'#22c55e', light:'rgba(34,197,94,0.18)',  text:'#4ade80' },
+  impossible: { main:'#a855f7', light:'rgba(168,85,247,0.18)', text:'#c084fc' },
+  below:      { main:'#ef4444', light:'rgba(239,68,68,0.18)',  text:'#f87171' }
+};
+const col = c => COLS[c] || COLS.below;
 
-function hexToRgb(hex) {
-  const r = parseInt(hex.slice(1,3),16);
-  const g = parseInt(hex.slice(3,5),16);
-  const b = parseInt(hex.slice(5,7),16);
-  return [r,g,b];
-}
-
-// Fix 1: blend from a dark muted base → vivid accent color for clear low→high gradient
-function gradientColor(mainHex, t) {
-  const [r,g,b] = hexToRgb(mainHex);
-  // Low end: very dark tinted background (color at ~8% opacity over black)
-  const baseR = Math.round(r * 0.12);
-  const baseG = Math.round(g * 0.12);
-  const baseB = Math.round(b * 0.12);
-  // High end: full vivid color
-  const outR = Math.round(baseR + (r - baseR) * t);
-  const outG = Math.round(baseG + (g - baseG) * t);
-  const outB = Math.round(baseB + (b - baseB) * t);
-  return `rgb(${outR},${outG},${outB})`;
+function gradientColor(hex, t) {
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  const br = r*.12|0, bg2 = g*.12|0, bb = b*.12|0;
+  return `rgb(${br+(r-br)*t|0},${bg2+(g-bg2)*t|0},${bb+(b-bb)*t|0})`;
 }
 
 function buildSteps(s) {
-  if (s.case==='impossible') return [];
-  const rows = [];
-  rows.push({ attended: s.attended, total: s.total, pct: s.pct, label:'now', isCurrent:true, isTarget:false });
-  if (s.case==='below') {
-    for (let i=1; i<=s.attendNeeded; i++) {
-      const a = s.attended+i, t = s.total+i;
-      const p = Math.round(a/t*100);
-      rows.push({ attended:a, total:t, pct:p, label:`+${i}`, isCurrent:false, isTarget: p>=s.target });
-      if (p>=s.target) break;
+  if (s.case === 'impossible') return [];
+  const rows = [{ attended:s.attended, total:s.total, pct:s.pct, label:'now', isCurrent:true, isTarget:false }];
+  if (s.case === 'below') {
+    for (let i = 1; i <= s.attendNeeded; i++) {
+      const a = s.attended+i, tot = s.total+i, p = Math.round(a/tot*100);
+      rows.push({ attended:a, total:tot, pct:p, label:`+${i}`, isCurrent:false, isTarget:p>=s.target });
+      if (p >= s.target) break;
     }
   } else {
-    for (let i=1; i<=s.safeBunks+1; i++) {
-      const t = s.total+i;
-      const p = Math.round(s.attended/t*100);
-      rows.push({ attended:s.attended, total:t, pct:p, label:`-${i}`, isCurrent:false, isTarget: i===s.safeBunks });
+    for (let i = 1; i <= s.safeBunks+1; i++) {
+      const tot = s.total+i, p = Math.round(s.attended/tot*100);
+      rows.push({ attended:s.attended, total:tot, pct:p, label:`-${i}`, isCurrent:false, isTarget:i===s.safeBunks });
       if (p < s.target) break;
     }
-    if (s.safeBunks===0) rows[rows.length-1].isTarget = true;
+    if (s.safeBunks === 0) rows[rows.length-1].isTarget = true;
   }
   return rows;
 }
 
-// Build convince-teacher steps: total stays fixed, attended increases
 function buildConvinceSteps(s) {
-  const rows = [];
-  rows.push({ attended: s.attended, total: s.total, pct: s.pct, label:'now', isCurrent:true, isTarget:false });
-  for (let i=1; i<=s.convinceNeeded; i++) {
-    const a = s.attended+i;
-    const p = Math.round(a/s.total*100);
-    rows.push({ attended:a, total:s.total, pct:p, label:`+${i}`, isCurrent:false, isTarget: p>=s.target });
-    if (p>=s.target) break;
+  const rows = [{ attended:s.attended, total:s.total, pct:s.pct, label:'now', isCurrent:true, isTarget:false }];
+  for (let i = 1; i <= s.convinceNeeded; i++) {
+    const a = s.attended+i, p = Math.round(a/s.total*100);
+    rows.push({ attended:a, total:s.total, pct:p, label:`+${i}`, isCurrent:false, isTarget:p>=s.target });
+    if (p >= s.target) break;
   }
   return rows;
-}
-
-function renderCell(row, i, steps, c) {
-  const isTarget = row.isTarget;
-  const isCurrent = row.isCurrent;
-
-  let t;
-  if (isCurrent) {
-    t = 0.08; // very dim — clearly the starting point
-  } else if (isTarget) {
-    t = 1.0;
-  } else {
-    // Spread evenly from 0.22 to 0.85 across intermediate steps
-    const intermediates = steps.filter(s => !s.isCurrent && !s.isTarget);
-    const myIdx = intermediates.findIndex((_, idx) => {
-      // match by position in steps array
-      return steps.indexOf(intermediates[idx]) === i;
-    });
-    const count = intermediates.length;
-    if (count <= 1) {
-      t = 0.5;
-    } else {
-      const pos = steps.filter(s => !s.isCurrent && !s.isTarget).indexOf(row);
-      t = 0.22 + (pos / (count - 1)) * (0.85 - 0.22);
-    }
-  }
-
-  const bg = gradientColor(c.main, t);
-
-  const topColor = isCurrent
-    ? 'rgba(255,255,255,0.25)'
-    : isTarget ? c.text
-    : `rgba(255,255,255,${0.2 + t * 0.6})`;
-
-  const botColor = isCurrent
-    ? 'rgba(255,255,255,0.2)'
-    : isTarget ? c.text
-    : `rgba(255,255,255,${0.15 + t * 0.5})`;
-
-  const topLabel = row.pct + '%';
-  const botLabel = isCurrent ? `${row.attended}/${row.total}` : row.label;
-
-  const targetClass = isTarget ? ' is-target' : '';
-  const currentClass = isCurrent ? ' is-current' : '';
-
-  return `<div class="vH-cell-col${targetClass}${currentClass}">
-    <div class="vH-cell-top" style="color:${topColor}">${topLabel}</div>
-    <div class="vH-cell-sq">
-      <div class="vH-cell-sq-inner" style="background:${bg}"></div>
-    </div>
-    <div class="vH-cell-bot" style="color:${botColor}">${botLabel}</div>
-  </div>`;
 }
 
 function renderCells(steps, c) {
-  let html = '';
-  steps.forEach((row, i) => { html += renderCell(row, i, steps, c); });
-  return html;
-}
-
-// ── Carousel slide logic ──
-function goToSlide(idx, s, c) {
-  currentSlide = idx;
-
-  // Update cells based on slide
-  const steps = idx === 0
-    ? buildSteps(s)
-    : buildConvinceSteps(s);
-
-  const cellsEl = document.getElementById('vH-cells');
-  cellsEl.innerHTML = renderCells(steps, c);
-
-  // Update header fraction
-  updateFrac(s, c, idx);
-
-  // Slide transform
-  const slidesEl = document.getElementById('vH-slides');
-  slidesEl.style.transform = `translateX(${idx === 0 ? '0%' : '-50%'})`;
-
-  // Dot states
-  document.querySelectorAll('.vH-dot').forEach((d, i) => {
-    d.classList.toggle('active', i === idx);
-  });
-
-  // Scroll cells to target
-  scrollToTarget();
+  const intermediates = steps.filter(r => !r.isCurrent && !r.isTarget);
+  const count = intermediates.length;
+  return steps.map((row) => {
+    let t;
+    if (row.isCurrent) t = 0.08;
+    else if (row.isTarget) t = 1.0;
+    else {
+      const pos = intermediates.indexOf(row);
+      t = count <= 1 ? 0.5 : 0.22 + (pos / (count-1)) * 0.63;
+    }
+    const bg       = gradientColor(c.main, t);
+    const topColor = row.isCurrent ? 'rgba(255,255,255,0.25)' : row.isTarget ? c.text : `rgba(255,255,255,${(0.2+t*0.6).toFixed(2)})`;
+    const botColor = row.isCurrent ? 'rgba(255,255,255,0.2)'  : row.isTarget ? c.text : `rgba(255,255,255,${(0.15+t*0.5).toFixed(2)})`;
+    const botLabel = row.isCurrent ? `${row.attended}/${row.total}` : row.label;
+    return `<div class="vH-cell-col${row.isTarget?' is-target':''}${row.isCurrent?' is-current':''}">
+      <div class="vH-cell-top" style="color:${topColor}">${row.pct}%</div>
+      <div class="vH-cell-sq"><div class="vH-cell-sq-inner" style="background:${bg}"></div></div>
+      <div class="vH-cell-bot" style="color:${botColor}">${botLabel}</div>
+    </div>`;
+  }).join('');
 }
 
 function updateFrac(s, c, slideIdx) {
-  const fracEl = document.getElementById('vH-frac');
   const from = `${s.attended}/${s.total}`;
-
-  if (s.case === 'impossible') {
-    fracEl.innerHTML = from;
-    return;
-  }
-
+  if (s.case === 'impossible') { elFrac.innerHTML = from; return; }
+  let toA, toT;
   if (s.case === 'above') {
-    // show from → attended/(total+safeBunks)
-    const toTotal = s.total + s.safeBunks;
-    const toColor = c.text;
-    fracEl.innerHTML = `${from}<span class="frac-arrow">→</span><span class="frac-to" style="color:${toColor}">${s.attended}/${toTotal}</span>`;
-    return;
-  }
-
-  // below: show from → to
-  let toAttended, toTotal;
-  if (slideIdx === 0) {
-    // attend more: both change
-    toAttended = s.attended + s.attendNeeded;
-    toTotal    = s.total + s.attendNeeded;
+    toA = s.attended; toT = s.total + s.safeBunks;
+  } else if (slideIdx === 0) {
+    toA = s.attended + s.attendNeeded; toT = s.total + s.attendNeeded;
   } else {
-    // convince: only attended changes, total fixed
-    toAttended = s.attended + s.convinceNeeded;
-    toTotal    = s.total;
+    toA = s.attended + s.convinceNeeded; toT = s.total;
   }
-
-  const toColor = c.text;
-  fracEl.innerHTML = `${from}<span class="frac-arrow">→</span><span class="frac-to" style="color:${toColor}">${toAttended}/${toTotal}</span>`;
+  elFrac.innerHTML = `${from}<span class="frac-arrow">→</span><span class="frac-to" style="color:${c.text}">${toA}/${toT}</span>`;
 }
 
 function scrollToTarget() {
   setTimeout(() => {
-    const wrap = document.getElementById('vH-scroll-wrap');
-    const targetCell = document.querySelector('.vH-cell-col.is-target');
-    if (wrap && targetCell) {
-      const wrapLeft = wrap.getBoundingClientRect().left;
-      const cellLeft = targetCell.getBoundingClientRect().left;
-      const scrollTo = wrap.scrollLeft + (cellLeft - wrapLeft) - wrap.clientWidth/2 + targetCell.offsetWidth/2;
-      wrap.scrollTo({ left: Math.max(0, scrollTo), behavior: 'smooth' });
-    }
+    const target = elWrap.querySelector('.vH-cell-col.is-target');
+    if (!target) return;
+    const to = elWrap.scrollLeft + (target.getBoundingClientRect().left - elWrap.getBoundingClientRect().left) - elWrap.clientWidth/2 + target.offsetWidth/2;
+    elWrap.scrollTo({ left: Math.max(0, to), behavior:'smooth' });
   }, 80);
 }
 
-// ── Touch swipe: carousel zone only (below the cell strip) ──
-let touchStartX = 0;
-let touchStartY = 0;
-let swipeState = 'idle'; // 'idle' | 'swiping' | 'scrolling'
-let swipeTarget = null;
+function goToSlide(idx, s, c) {
+  currentSlide = idx;
+  elCells.innerHTML = renderCells(idx === 0 ? buildSteps(s) : buildConvinceSteps(s), c);
+  updateFrac(s, c, idx);
+  elSlides.style.transform = idx ? 'translateX(-50%)' : 'translateX(0%)';
+  elDot0.classList.toggle('active', idx === 0);
+  elDot1.classList.toggle('active', idx === 1);
+  scrollToTarget();
+}
 
-const cardEl = document.getElementById('vH');
-const scrollWrapEl = document.getElementById('vH-scroll-wrap');
-const carouselEl  = document.getElementById('vH-carousel');
-
-cardEl.addEventListener('touchstart', e => {
-  touchStartX = e.touches[0].clientX;
-  touchStartY = e.touches[0].clientY;
-  swipeState  = 'idle';
-  swipeTarget = e.target;
-}, { passive: true });
-
-cardEl.addEventListener('touchmove', e => {
-  if (swipeState !== 'idle') return;
-  const dx = Math.abs(e.touches[0].clientX - touchStartX);
-  const dy = Math.abs(e.touches[0].clientY - touchStartY);
-  if (dx < 6 && dy < 6) return; // haven't moved enough yet
-
-  const inScrollArea = scrollWrapEl.contains(swipeTarget);
-  const inCarousel   = carouselEl.contains(swipeTarget);
-
-  if (inScrollArea) {
-    // Inside cell strip — only hijack when at scroll boundary
-    const { scrollLeft, scrollWidth, clientWidth } = scrollWrapEl;
-    const atStart = scrollLeft <= 2;
-    const atEnd   = scrollLeft + clientWidth >= scrollWidth - 2;
-    const goingLeft  = e.touches[0].clientX - touchStartX < 0;
-    const goingRight = e.touches[0].clientX - touchStartX > 0;
-    if ((goingLeft && atEnd) || (goingRight && atStart)) {
-      swipeState = dx > dy ? 'swiping' : 'scrolling';
-    } else {
-      swipeState = 'scrolling';
-    }
-  } else if (inCarousel || !inScrollArea) {
-    // Anywhere else on the card (carousel zone, header, etc.)
-    swipeState = dx > dy ? 'swiping' : 'scrolling';
-  }
-}, { passive: true });
-
-cardEl.addEventListener('touchend', e => {
-  if (swipeState !== 'swiping') { swipeState = 'idle'; return; }
-  const dx = e.changedTouches[0].clientX - touchStartX;
-  swipeState = 'idle';
-  if (Math.abs(dx) < 20) return; // minimum swipe distance
-  if (dx < 0 && currentSlide < totalSlides - 1) goToSlide(currentSlide + 1, lastS, col(lastCase));
-  if (dx > 0 && currentSlide > 0)               goToSlide(currentSlide - 1, lastS, col(lastCase));
-});
-
-// Dot click
-document.getElementById('vH-dots').addEventListener('click', e => {
-  const dot = e.target.closest('.vH-dot');
-  if (!dot) return;
-  const idx = parseInt(dot.dataset.idx);
-  if (!isNaN(idx)) goToSlide(idx, lastS, col(lastCase));
-});
-
-// ── Scroll fade logic ──
-const scrollOuter = document.getElementById('vH-scroll-outer');
-const scrollWrap = scrollWrapEl; // reuse the already-declared reference
-scrollOuter.classList.add('at-start');
-
-scrollWrap.addEventListener('scroll', () => {
-  const { scrollLeft, scrollWidth, clientWidth } = scrollWrap;
-  scrollOuter.classList.toggle('at-start', scrollLeft < 4);
-  scrollOuter.classList.toggle('scrolled', scrollLeft >= 4);
-  scrollOuter.classList.toggle('at-end', scrollLeft + clientWidth >= scrollWidth - 4);
-}, { passive: true });
-
-// ── Main render ──
-function updateVH(s) {
-  lastS = s;
-  lastCase = s.case;
+function updateCard(s) {
+  lastS = s; lastCase = s.case;
   const c = col(s.case);
-
-  // Header
-  document.getElementById('vH-pct').innerHTML = `${s.pct}<sup>%</sup>`;
-  document.getElementById('vH-pct').style.color = c.text;
-  const badge = document.getElementById('vH-badge');
-  badge.style.background = c.light; badge.style.color = c.text;
-  badge.textContent = s.case==='above' ? 'Safe ✓' : s.case==='impossible' ? 'Impossible' : 'Below Target';
-
-  const slidesEl  = document.getElementById('vH-slides');
-  const dotsEl    = document.getElementById('vH-dots');
-  const hintEl    = document.getElementById('vH-swipe-hint');
-  const slide0    = document.getElementById('vH-slide-0');
-  const slide1    = document.getElementById('vH-slide-1');
-
+  elPct.innerHTML = `${s.pct}<sup>%</sup>`;
+  elPct.style.color = c.text;
+  elBadge.style.cssText = `background:${c.light};color:${c.text}`;
+  elBadge.textContent = s.case==='above' ? 'Safe ✓' : s.case==='impossible' ? 'Impossible' : 'Below Target';
+  currentSlide = 0;
+  elSlides.style.transform = 'translateX(0%)';
+  elSlide1.innerHTML = ''; elSlide1.className = 'vH-slide';
+  elDot0.classList.add('active'); elDot1.classList.remove('active');
   if (s.case === 'impossible') {
-    // Single slide, no dots
     totalSlides = 1;
-    slidesEl.classList.add('single');
-    dotsEl.classList.add('hidden');
-    document.getElementById('dot-1').style.display = '';
-    hintEl.style.display = 'none';
-    // Reset position
-    currentSlide = 0;
-    slidesEl.style.transform = 'translateX(0%)';
-    slide1.innerHTML = '';
-    slide1.className = 'vH-slide';
-
-    slide0.innerHTML = `<div class="vH-action-row">
+    elSlides.classList.add('single'); elDots.classList.add('hidden'); elDot1.style.display = ''; elHint.style.display = 'none';
+    elSlide0.innerHTML = `<div class="vH-action-row">
       <div class="vH-action-icon" style="color:${c.text}">✗</div>
       <div class="vH-action-text" style="color:rgba(255,255,255,0.4)">100% is no longer achievable. Talk to your professor.</div>
     </div>`;
-    slide1.innerHTML = '';
-
-    // cells
     const cell = { attended:s.attended, total:s.total, pct:s.pct, label:'now', isCurrent:true, isTarget:false };
-    document.getElementById('vH-cells').innerHTML = renderCell(cell, 0, [cell], c);
-    updateFrac(s, c, 0);
-
+    elCells.innerHTML = renderCells([cell], c);
   } else if (s.case === 'above') {
-    // Single slide — show 1 dot (active) to signal carousel exists
     totalSlides = 1;
-    slidesEl.classList.add('single');
-    dotsEl.classList.remove('hidden');
-    // Show only dot-0 active, hide dot-1
-    document.getElementById('dot-0').classList.add('active');
-    document.getElementById('dot-1').style.display = 'none';
-    hintEl.style.display = 'none';
-    // Reset position — critical fix for returning from below/convince state
-    currentSlide = 0;
-    slidesEl.style.transform = 'translateX(0%)';
-    slide1.innerHTML = '';
-    slide1.className = 'vH-slide';
-
-    slide0.innerHTML = `<div class="vH-action-row">
+    elSlides.classList.add('single'); elDots.classList.remove('hidden'); elDot1.style.display = 'none'; elHint.style.display = 'none';
+    elSlide0.innerHTML = `<div class="vH-action-row">
       <div class="vH-action-icon" style="color:${c.text}">✓</div>
       <div class="vH-action-text">You can <strong>skip ${s.safeBunks} class${s.safeBunks!==1?'es':''}</strong> safely</div>
       <div class="vH-action-num" style="color:${c.text}">${s.safeBunks}</div>
     </div>`;
-    slide1.innerHTML = '';
-
-    const steps = buildSteps(s);
-    document.getElementById('vH-cells').innerHTML = renderCells(steps, c);
-    updateFrac(s, c, 0);
-
+    elCells.innerHTML = renderCells(buildSteps(s), c);
   } else {
-    // below — two slides
     totalSlides = 2;
-    slidesEl.classList.remove('single');
-    dotsEl.classList.remove('hidden');
-    document.getElementById('dot-1').style.display = ''; // restore if hidden from above state
-    hintEl.style.display = '';
-
-    slide0.innerHTML = `<div class="vH-action-row">
+    elSlides.classList.remove('single'); elDots.classList.remove('hidden'); elDot1.style.display = ''; elHint.style.display = '';
+    elSlide0.innerHTML = `<div class="vH-action-row">
       <div class="vH-action-icon" style="color:${c.text}">↑</div>
       <div class="vH-action-text">Attend <strong>${s.attendNeeded} more class${s.attendNeeded!==1?'es':''}</strong> to reach ${s.target}%</div>
       <div class="vH-action-num" style="color:${c.text}">${s.attendNeeded}</div>
     </div>`;
-
-    slide1.className = 'vH-slide';
-    slide1.innerHTML = `<div class="vH-action-row">
+    elSlide1.innerHTML = `<div class="vH-action-row">
       <div class="vH-action-icon" style="color:${c.text}">✦</div>
       <div class="vH-action-text">Or convince teacher to mark <strong>${s.convinceNeeded} absent</strong> as present</div>
       <div class="vH-action-num" style="color:${c.text}">${s.convinceNeeded}</div>
     </div>`;
-
-    // Reset to slide 0 on data change
-    currentSlide = 0;
-    slidesEl.style.transform = 'translateX(0%)';
-    document.getElementById('dot-0').classList.add('active');
-    document.getElementById('dot-1').classList.remove('active');
-
-    const steps = buildSteps(s);
-    document.getElementById('vH-cells').innerHTML = renderCells(steps, c);
-    updateFrac(s, c, 0);
+    elCells.innerHTML = renderCells(buildSteps(s), c);
   }
-
-  // Reset scroll fade
-  scrollWrap.scrollLeft = 0;
-  scrollOuter.classList.add('at-start');
-  scrollOuter.classList.remove('scrolled', 'at-end');
-  setTimeout(() => {
-    const { scrollWidth, clientWidth } = scrollWrap;
-    if (scrollWidth <= clientWidth) scrollOuter.classList.add('at-end');
-  }, 50);
-
+  updateFrac(s, c, 0);
+  elWrap.scrollLeft = 0;
+  elOuter.classList.add('at-start');
+  elOuter.classList.remove('scrolled', 'at-end');
+  setTimeout(() => { if (elWrap.scrollWidth <= elWrap.clientWidth) elOuter.classList.add('at-end'); }, 50);
   scrollToTarget();
 }
 
-function updateAll() {
-  const total    = parseInt(document.getElementById('ctrl-total').value);
-  const attended = Math.min(parseInt(document.getElementById('ctrl-attended').value), total);
-  const target   = parseInt(document.getElementById('ctrl-target').value);
-  document.getElementById('ctrl-attended').max = total;
-  document.getElementById('ctrl-attended-val').textContent = attended;
-  document.getElementById('ctrl-total-val').textContent = total;
-  document.getElementById('ctrl-target-val').textContent = target + '%';
-  const s = calc(total, attended, target);
-  updateVH(s);
+// Master update — called whenever any slider changes
+function onValuesChanged() {
+  gAttended = Math.min(gAttended, gTotal); // clamp attended ≤ total
+  updateCard(calc(gTotal, gAttended, gTarget));
+  // Keep attended slider clamped visually
+  s2.clampToMax();
 }
 
-['ctrl-total','ctrl-attended','ctrl-target'].forEach(id =>
-  document.getElementById(id).addEventListener('input', updateAll)
-);
-updateAll();
+// Scroll fade
+elOuter.classList.add('at-start');
+elWrap.addEventListener('scroll', () => {
+  const { scrollLeft, scrollWidth, clientWidth } = elWrap;
+  elOuter.classList.toggle('at-start', scrollLeft < 4);
+  elOuter.classList.toggle('scrolled', scrollLeft >= 4);
+  elOuter.classList.toggle('at-end',   scrollLeft + clientWidth >= scrollWidth - 4);
+}, { passive:true });
+
+// Dots nav
+elDots.addEventListener('click', e => {
+  const dot = e.target.closest('.vH-dot');
+  if (dot) goToSlide(+dot.dataset.idx, lastS, col(lastCase));
+});
+
+// Touch swipe
+let touchStartX = 0, touchStartY = 0, swipeState = 'idle', swipeTarget = null;
+elCard.addEventListener('touchstart', e => {
+  touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY;
+  swipeState = 'idle'; swipeTarget = e.target;
+}, { passive:true });
+elCard.addEventListener('touchmove', e => {
+  if (swipeState !== 'idle') return;
+  const dx = e.touches[0].clientX - touchStartX;
+  const adx = Math.abs(dx), ady = Math.abs(e.touches[0].clientY - touchStartY);
+  if (adx < 6 && ady < 6) return;
+  if (elWrap.contains(swipeTarget)) {
+    const { scrollLeft, scrollWidth, clientWidth } = elWrap;
+    const atBoundary = (dx < 0 && scrollLeft + clientWidth >= scrollWidth - 2) || (dx > 0 && scrollLeft <= 2);
+    swipeState = (atBoundary && adx > ady) ? 'swiping' : 'scrolling';
+  } else {
+    swipeState = adx > ady ? 'swiping' : 'scrolling';
+  }
+}, { passive:true });
+elCard.addEventListener('touchend', e => {
+  if (swipeState !== 'swiping') { swipeState = 'idle'; return; }
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  swipeState = 'idle';
+  if (Math.abs(dx) < 20) return;
+  if (dx < 0 && currentSlide < totalSlides - 1) goToSlide(currentSlide + 1, lastS, col(lastCase));
+  if (dx > 0 && currentSlide > 0)               goToSlide(currentSlide - 1, lastS, col(lastCase));
+});
+
+// ════════════════════════════════════════════
+//  SLIDER LOGIC
+// ════════════════════════════════════════════
+const TICK_COUNT = 100;
+const SNAP_ANGLE = 360 / TICK_COUNT;
+const RUBBER_MAX = 12;
+
+let audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+function playTick() {
+  try {
+    const ctx = getAudioCtx();
+    [[900, 0.1], [450, 0.06]].forEach(([f, vol]) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'sine'; o.frequency.value = f;
+      g.gain.setValueAtTime(vol, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.035);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(); o.stop(ctx.currentTime + 0.035);
+    });
+  } catch(e) {}
+}
+function triggerHaptic() { if (navigator.vibrate) navigator.vibrate([14, 4, 14]); }
+
+function setDisplayImmediate(valEl, val) {
+  valEl.textContent = val;
+  valEl.style.transform = 'translate(-50%,-50%) scale(1)';
+  valEl.style.opacity   = '1';
+}
+
+function createRadialSlider({ wheelEl, valEl, containerEl, getMaxValue, onValueSettle, initialValue }) {
+  const settle = onValueSettle || (() => {});
+
+  const frag = document.createDocumentFragment();
+  for (let i = 0; i < TICK_COUNT; i++) {
+    const tick = document.createElement('div');
+    tick.className = 'tick';
+    tick.style.transform = `rotate(${i * SNAP_ANGLE}deg)`;
+    const line = document.createElement('div');
+    line.className = 'tick-line ' + (i % 10 === 0 ? 'super' : i % 5 === 0 ? 'major' : 'minor');
+    tick.appendChild(line);
+    frag.appendChild(tick);
+  }
+  wheelEl.appendChild(frag);
+
+  const snapAngle = v => Math.round(Math.max(0, Math.min(getMaxValue(), v)) / 1) * SNAP_ANGLE;
+
+  let accumulatedRotation = initialValue * SNAP_ANGLE;
+  let isDragging = false, lastClientX = 0, lastMoveTime = 0, velocityDps = 0;
+  let momentumRAF = null, rubberAnchorX = null, rubberOffset = 0, rubberRafId = null;
+  let shakeDebounce = false, lastDisplayedValue = initialValue, lastTickValue = initialValue;
+
+  // Set initial visual position
+  wheelEl.style.transform = `rotate(${-accumulatedRotation}deg)`;
+  setDisplayImmediate(valEl, initialValue);
+
+  const maxRot = () => getMaxValue() * SNAP_ANGLE;
+
+  function getValueFromRotation(rot) {
+    return Math.max(0, Math.min(getMaxValue(), Math.round(rot / SNAP_ANGLE)));
+  }
+  function applyVisualRotation(logical, extra = 0, animate = false) {
+    wheelEl.style.transition = animate ? 'transform 0.35s cubic-bezier(0.34,1.2,0.64,1)' : 'none';
+    wheelEl.style.transform  = `rotate(${-(logical + extra)}deg)`;
+  }
+  function updateDisplay(val) {
+    if (val === lastDisplayedValue) return;
+    if (Math.abs(val - lastTickValue) >= 1) { playTick(); triggerHaptic(); lastTickValue = val; }
+    valEl.style.transform = 'translate(-50%,-50%) scale(1.2)';
+    valEl.style.opacity   = '0.7';
+    setTimeout(() => {
+      valEl.textContent     = val;
+      valEl.style.transform = 'translate(-50%,-50%) scale(1)';
+      valEl.style.opacity   = '1';
+    }, 60);
+    lastDisplayedValue = val;
+  }
+  function snapToNearest(rot) {
+    const c = Math.max(0, Math.min(maxRot(), rot));
+    return Math.round(c / SNAP_ANGLE) * SNAP_ANGLE;
+  }
+  function animateRubberReturn() {
+    if (rubberRafId) cancelAnimationFrame(rubberRafId);
+    const start = rubberOffset, t0 = performance.now(), dur = 420;
+    function step(now) {
+      const t = Math.min((now - t0) / dur, 1);
+      rubberOffset = start * (1 - (1 - Math.pow(1 - t, 3)));
+      applyVisualRotation(0, rubberOffset);
+      rubberRafId = t < 1 ? requestAnimationFrame(step) : (rubberOffset = 0, applyVisualRotation(0), null);
+    }
+    rubberRafId = requestAnimationFrame(step);
+  }
+  function triggerBoundaryFeedback() {
+    rubberOffset = -6; applyVisualRotation(0, rubberOffset);
+    setTimeout(animateRubberReturn, 30);
+  }
+  function finishMomentum(rot) {
+    const snapped = snapToNearest(rot);
+    accumulatedRotation = snapped;
+    applyVisualRotation(snapped, 0, true);
+    const v = getValueFromRotation(snapped);
+    updateDisplay(v);
+    settle(v);
+  }
+  function startMomentum(initialVel) {
+    if (momentumRAF) cancelAnimationFrame(momentumRAF);
+    if (Math.abs(initialVel) < 30) { finishMomentum(accumulatedRotation); return; }
+    let vel = initialVel, lastTime = performance.now();
+    function step(now) {
+      const dt = Math.min((now - lastTime) / 1000, 0.05);
+      lastTime = now;
+      const newRot = accumulatedRotation + vel * dt;
+      if (newRot < 0) { accumulatedRotation = 0; applyVisualRotation(0); updateDisplay(0); triggerBoundaryFeedback(); settle(0); return; }
+      if (newRot > maxRot()) { accumulatedRotation = maxRot(); applyVisualRotation(maxRot()); updateDisplay(getMaxValue()); return; }
+      accumulatedRotation = newRot;
+      applyVisualRotation(accumulatedRotation);
+      updateDisplay(getValueFromRotation(accumulatedRotation));
+      vel *= 0.92;
+      momentumRAF = Math.abs(vel) > 15 ? requestAnimationFrame(step) : (finishMomentum(accumulatedRotation), null);
+    }
+    momentumRAF = requestAnimationFrame(step);
+  }
+  function onDragStart(clientX) {
+    if (momentumRAF) { cancelAnimationFrame(momentumRAF); momentumRAF = null; }
+    if (rubberRafId) { cancelAnimationFrame(rubberRafId); rubberRafId = null; }
+    rubberOffset = 0; rubberAnchorX = null; isDragging = true;
+    lastClientX = clientX; lastMoveTime = performance.now(); velocityDps = 0;
+    accumulatedRotation = snapToNearest(accumulatedRotation);
+  }
+  function onDragMove(clientX) {
+    if (!isDragging) return;
+    const now = performance.now();
+    const dt  = Math.max(now - lastMoveTime, 1);
+    const dx  = clientX - lastClientX;
+    const spd = Math.abs(dx) / dt;
+    const sens = 1.0 + 4.0 * Math.min(spd / 1.5, 1);
+    const delta = -dx * (SNAP_ANGLE / 10) * sens;
+    const desired = accumulatedRotation + delta;
+    if (desired < 0) {
+      accumulatedRotation = 0;
+      if (rubberAnchorX === null) { rubberAnchorX = clientX; settle(0); }
+      rubberOffset = RUBBER_MAX * (1 - Math.exp(-Math.max(0, clientX - rubberAnchorX) / 40));
+      applyVisualRotation(0, rubberOffset); updateDisplay(0);
+      if (!shakeDebounce) {
+        shakeDebounce = true;
+        valEl.classList.add('at-zero', 'shake');
+        setTimeout(() => { valEl.classList.remove('shake'); setTimeout(() => valEl.classList.remove('at-zero'), 600); shakeDebounce = false; }, 420);
+      }
+    } else if (desired > maxRot()) {
+      accumulatedRotation = maxRot(); rubberOffset = 0;
+      applyVisualRotation(maxRot()); updateDisplay(getMaxValue());
+    } else {
+      rubberAnchorX = null; rubberOffset = 0;
+      accumulatedRotation = desired;
+      applyVisualRotation(accumulatedRotation); updateDisplay(getValueFromRotation(accumulatedRotation));
+    }
+    velocityDps = velocityDps * 0.6 + (-dx * (SNAP_ANGLE / 10) * sens / (dt / 1000)) * 0.4;
+    lastClientX = clientX; lastMoveTime = now;
+  }
+  function onDragEnd() {
+    if (!isDragging) return;
+    isDragging = false;
+    if (accumulatedRotation === 0 && rubberOffset > 0) { rubberAnchorX = null; animateRubberReturn(); return; }
+    rubberOffset = 0; rubberAnchorX = null;
+    startMomentum(velocityDps);
+  }
+  function clampToMax() {
+    const mx = maxRot();
+    if (accumulatedRotation > mx) {
+      accumulatedRotation = mx;
+      applyVisualRotation(mx, 0, true);
+      const v = getValueFromRotation(mx);
+      updateDisplay(v);
+      lastDisplayedValue = v;
+    }
+  }
+  containerEl.addEventListener('mousedown',  e => { onDragStart(e.clientX); e.preventDefault(); });
+  containerEl.addEventListener('touchstart', e => { onDragStart(e.touches[0].clientX); e.preventDefault(); }, { passive:false });
+  return { onDragMove, onDragEnd, clampToMax, getCurrentValue: () => getValueFromRotation(accumulatedRotation) };
+}
+
+// ── Instantiate radial sliders ──
+const s1 = createRadialSlider({
+  wheelEl:     $('wheel'),
+  valEl:       $('val'),
+  containerEl: $('wheelContainer'),
+  getMaxValue: () => 500,
+  initialValue: DEFAULT_TOTAL,
+  onValueSettle: v => { gTotal = v; onValuesChanged(); },
+});
+
+const s2 = createRadialSlider({
+  wheelEl:     $('wheel2'),
+  valEl:       $('val2'),
+  containerEl: $('wheelContainer2'),
+  getMaxValue: () => gTotal,
+  initialValue: DEFAULT_ATTENDED,
+  onValueSettle: v => { gAttended = v; onValuesChanged(); },
+});
+
+window.addEventListener('mousemove', e => { s1.onDragMove(e.clientX); s2.onDragMove(e.clientX); s2.clampToMax(); });
+window.addEventListener('mouseup',   ()  => { s1.onDragEnd(); s2.onDragEnd(); });
+window.addEventListener('touchmove', e => { s1.onDragMove(e.touches[0].clientX); s2.onDragMove(e.touches[0].clientX); s2.clampToMax(); }, { passive:true });
+window.addEventListener('touchend',  ()  => { s1.onDragEnd(); s2.onDragEnd(); });
+
+// ── Horizontal slider (Target %) ──
+(function createHorizontalSlider() {
+  const TICK_COUNT_H = 101;
+  const MAX_VALUE_H  = 100;
+  const TICK_PX      = 10;
+  const MAX_OFFSET   = MAX_VALUE_H * TICK_PX;
+  const RUBBER_MAX_H = 28;
+  const PAD          = 20;
+
+  const container = $('sliderContainer3');
+  const strip     = $('tickStrip3');
+  const valEl     = $('val3');
+  const pctEl     = valEl.parentElement.querySelector('.label-h-pct');
+
+  function repositionLabels() {
+    pctEl.style.left = `calc(50% + ${valEl.offsetWidth / 2}px)`;
+  }
+
+  const frag2 = document.createDocumentFragment();
+  for (let i = -PAD; i < TICK_COUNT_H + PAD; i++) {
+    const slot = document.createElement('div');
+    slot.className = 'tick-slot';
+    const line = document.createElement('div');
+    const mod = ((i % 10) + 10) % 10;
+    line.className = 'tick-line ' + (mod === 0 ? 'super' : mod === 5 ? 'major' : 'minor');
+    if (i < 0 || i >= TICK_COUNT_H) line.style.opacity = '0.95';
+    slot.appendChild(line);
+    frag2.appendChild(slot);
+  }
+  strip.appendChild(frag2);
+  strip.style.marginLeft = `${-PAD * TICK_PX}px`;
+  const slots = strip.querySelectorAll('.tick-slot');
+
+  function apply3DEffect() {
+    const cw = container.offsetWidth, cx = cw / 2;
+    const rect = container.getBoundingClientRect();
+    slots.forEach(slot => {
+      const sr   = slot.getBoundingClientRect();
+      const dist = Math.abs(cx - (sr.left - rect.left + sr.width / 2));
+      const nd   = Math.min(dist / cx, 1);
+      const cv   = Math.pow(Math.cos(nd * Math.PI / 2.5), 0.7);
+      const line = slot.firstElementChild;
+      line.style.transform = `scaleY(${0.25 + cv * 0.75}) translateY(${nd * 8}px)`;
+      line.style.opacity   = 0.3 + cv * 0.7;
+    });
+  }
+
+  const getValueFromOffset = px => Math.max(0, Math.min(MAX_VALUE_H, Math.round(px / TICK_PX)));
+  const snapToNearest      = px => Math.round(Math.max(0, Math.min(MAX_OFFSET, px)) / TICK_PX) * TICK_PX;
+
+  // Set initial position
+  let offsetPx = DEFAULT_TARGET * TICK_PX;
+  valEl.textContent = DEFAULT_TARGET;
+
+  function applyVisualOffset(logical, extra = 0, animate = false) {
+    strip.style.transition = animate ? 'transform 0.35s cubic-bezier(0.34,1.2,0.64,1)' : 'none';
+    strip.style.transform  = `translateX(${-(logical + extra)}px)`;
+    requestAnimationFrame(apply3DEffect);
+  }
+
+  applyVisualOffset(offsetPx); // render initial position
+
+  let isDragging = false, lastClientX = 0, lastMoveTime = 0, velocityPxS = 0;
+  let momentumRAF = null, rubberOffset = 0, rubberRafId = null;
+  let shakeDebounce = false, lastDisplayedValue = DEFAULT_TARGET, lastTickValue = DEFAULT_TARGET;
+
+  function updateDisplay(val) {
+    if (val === lastDisplayedValue) return;
+    if (Math.abs(val - lastTickValue) >= 1) { playTick(); triggerHaptic(); lastTickValue = val; }
+    valEl.style.transform = 'translate(-50%,-50%) scale(1.2)';
+    valEl.style.opacity   = '0.7';
+    setTimeout(() => {
+      valEl.textContent     = val;
+      valEl.style.transform = 'translate(-50%,-50%) scale(1)';
+      valEl.style.opacity   = '1';
+      repositionLabels();
+      gTarget = val;
+      onValuesChanged();
+    }, 60);
+    lastDisplayedValue = val;
+  }
+
+  function animateRubberReturn() {
+    if (rubberRafId) cancelAnimationFrame(rubberRafId);
+    const start = rubberOffset, t0 = performance.now(), dur = 350;
+    function step(now) {
+      const t = Math.min((now - t0) / dur, 1);
+      rubberOffset = t === 1 ? 0 : start * (1 - Math.pow(2, -10 * t));
+      applyVisualOffset(offsetPx, rubberOffset);
+      rubberRafId = t < 1 ? requestAnimationFrame(step) : (rubberOffset = 0, applyVisualOffset(offsetPx), null);
+    }
+    rubberRafId = requestAnimationFrame(step);
+  }
+  function triggerBoundaryFeedback(dir) {
+    rubberOffset = dir * -8; applyVisualOffset(offsetPx, rubberOffset);
+    setTimeout(animateRubberReturn, 30);
+    if (!shakeDebounce) {
+      shakeDebounce = true;
+      valEl.classList.add('at-zero', 'shake'); pctEl.classList.add('at-zero', 'shake');
+      valEl.textContent = '0'; lastDisplayedValue = 0;
+      setTimeout(() => {
+        valEl.classList.remove('shake'); pctEl.classList.remove('shake');
+        setTimeout(() => { valEl.classList.remove('at-zero'); pctEl.classList.remove('at-zero'); }, 600);
+        shakeDebounce = false;
+      }, 420);
+    }
+  }
+  function finishMomentum(px) {
+    const snapped = snapToNearest(px);
+    offsetPx = snapped; applyVisualOffset(snapped, 0, true);
+    updateDisplay(getValueFromOffset(snapped));
+  }
+  function startMomentum(initialVel) {
+    if (momentumRAF) cancelAnimationFrame(momentumRAF);
+    if (Math.abs(initialVel) < 30) { finishMomentum(offsetPx); return; }
+    let vel = initialVel, lastTime = performance.now();
+    function step(now) {
+      const dt = Math.min((now - lastTime) / 1000, 0.05);
+      lastTime = now;
+      const newOff = offsetPx + vel * dt;
+      if (newOff < 0) { offsetPx = 0; applyVisualOffset(0); updateDisplay(0); triggerBoundaryFeedback(-1); return; }
+      if (newOff > MAX_OFFSET) { offsetPx = MAX_OFFSET; applyVisualOffset(MAX_OFFSET); updateDisplay(MAX_VALUE_H); return; }
+      offsetPx = newOff; applyVisualOffset(offsetPx); updateDisplay(getValueFromOffset(offsetPx));
+      vel *= 0.92;
+      momentumRAF = Math.abs(vel) > 15 ? requestAnimationFrame(step) : (finishMomentum(offsetPx), null);
+    }
+    momentumRAF = requestAnimationFrame(step);
+  }
+  function onDragStart(clientX) {
+    if (momentumRAF) { cancelAnimationFrame(momentumRAF); momentumRAF = null; }
+    if (rubberRafId) { cancelAnimationFrame(rubberRafId); rubberRafId = null; }
+    rubberOffset = 0; isDragging = true;
+    lastClientX = clientX; lastMoveTime = performance.now(); velocityPxS = 0;
+    offsetPx = snapToNearest(offsetPx);
+  }
+  function onDragMove(clientX) {
+    if (!isDragging) return;
+    const now  = performance.now();
+    const dt   = Math.max(now - lastMoveTime, 1);
+    const dx   = clientX - lastClientX;
+    const sens = 1.0 + 4.0 * Math.min(Math.abs(dx) / dt / 1.5, 1);
+    const desired = offsetPx + (-dx * sens);
+    if (desired < 0) {
+      rubberOffset = -Math.min(RUBBER_MAX_H * (1 - Math.exp(-Math.abs(desired) / (RUBBER_MAX_H * 2))), RUBBER_MAX_H);
+      applyVisualOffset(0, rubberOffset); updateDisplay(0);
+    } else if (desired > MAX_OFFSET) {
+      offsetPx = MAX_OFFSET; rubberOffset = 0; applyVisualOffset(MAX_OFFSET); updateDisplay(MAX_VALUE_H);
+    } else {
+      rubberOffset = 0; offsetPx = desired; applyVisualOffset(offsetPx); updateDisplay(getValueFromOffset(offsetPx));
+    }
+    velocityPxS = velocityPxS * 0.6 + (-dx * sens / (dt / 1000)) * 0.4;
+    lastClientX = clientX; lastMoveTime = now;
+  }
+  function onDragEnd() {
+    if (!isDragging) return;
+    isDragging = false;
+    if (offsetPx <= 0 && rubberOffset < 0) { offsetPx = 0; triggerBoundaryFeedback(-1); return; }
+    rubberOffset = 0; startMomentum(velocityPxS);
+  }
+
+  container.addEventListener('mousedown',  e => { onDragStart(e.clientX); e.preventDefault(); });
+  container.addEventListener('touchstart', e => { onDragStart(e.touches[0].clientX); e.preventDefault(); }, { passive:false });
+  window.addEventListener('mousemove', e => { if (isDragging) onDragMove(e.clientX); });
+  window.addEventListener('mouseup',   ()  => onDragEnd());
+  window.addEventListener('touchmove', e => { if (isDragging) onDragMove(e.touches[0].clientX); });
+  window.addEventListener('touchend',  ()  => onDragEnd());
+
+  apply3DEffect();
+  repositionLabels();
+})();
+
+// ── Initial card render ──
+onValuesChanged();
 </script>
 </body>
 </html>
