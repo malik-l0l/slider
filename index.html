@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
   <title>Attendance Calculator</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500&display=swap');
@@ -10,9 +10,56 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg: #111113; --card: #000; --border: rgba(255,255,255,0.07);
-      --t2: rgba(255,255,255,0.5); --t3: rgba(255,255,255,0.25);
+      --bg: #111113;
+      --card: #000;
+      --border: rgba(255,255,255,0.07);
+      --t2: rgba(255,255,255,0.5);
       --mono: 'DM Mono', monospace;
+
+      /* ── Fluid layout tokens ──
+         All sizing derives from actual viewport height so
+         the entire UI fits on one screen, portrait-only.
+         dvh = dynamic viewport height (handles mobile browser chrome).
+         We budget the 100dvh across 4 zones:
+           gap-top  : safe-area + small breathing room
+           card-vh  : display card (largest zone)
+           sliders  : 2 radial + 1 horizontal (compact)
+           gap-bot  : safe-area bottom                              */
+
+      --gap-outer : clamp(6px, 1.5dvh, 14px);
+      --gap-cards : clamp(5px, 1dvh,   10px);
+
+      /* Card width: full bleed minus symmetric gutters */
+      --gutter     : clamp(12px, 3.5vw, 20px);
+      --card-w     : min(100vw - var(--gutter) * 2, 420px);
+
+      /* Display card height: auto (content-driven) with min-height constraint */
+      --display-card-pad-v : clamp(12px, 1.8dvh, 20px);
+      --display-card-pad-h : clamp(12px, 3vw,    18px);
+
+      /* Radial slider cards */
+      --radial-h   : clamp(108px, 18dvh, 148px);
+      --radial-pad : clamp(12px, 1.6dvh, 18px);
+
+      /* Horizontal slider card */
+      --horiz-h    : clamp(72px, 11dvh, 108px);
+      --horiz-pad  : clamp(10px, 1.4dvh, 16px);
+
+      /* Typography scale */
+      --fs-pct     : clamp(32px, 6.5vw, 44px);
+      --fs-badge   : clamp(9px, 2.2vw, 11px);
+      --fs-frac    : clamp(9px, 2.2vw, 11px);
+      --fs-label   : clamp(11px, 2.6vw, 13px);
+      --fs-val     : clamp(17px, 4vw,   22px);
+      --fs-action  : clamp(10px, 2.4vw, 12px);
+      --fs-action-num : clamp(18px, 4.5vw, 22px);
+      --fs-cell    : clamp(8px, 1.9vw, 9px);
+      --cell-sq    : clamp(26px, 6.5vw, 34px);
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden; /* HARD stop — no scrolling ever */
     }
 
     body {
@@ -22,52 +69,162 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 20px;
-      padding: 28px 16px 60px;
+      justify-content: center;          /* vertical centering */
+      gap: var(--gap-cards);
+      padding:
+        max(var(--gap-outer), env(safe-area-inset-top))
+        var(--gutter)
+        max(var(--gap-outer), env(safe-area-inset-bottom));
       min-height: 100dvh;
+      max-height: 100dvh;
     }
 
-    /* ─── DISPLAY CARD ─── */
-    .vH { width: 100%; max-width: 384px; background: var(--card); border-radius: 20px; padding: 18px 16px 20px; }
-    .vH-head { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 16px; }
-    .vH-pct { font-family: 'DM Sans', sans-serif; font-size: 42px; font-weight: 700; letter-spacing: -.05em; line-height: 1; }
-    .vH-pct sup { font-size: 16px; font-weight: 400; opacity: .35; }
+    /* ══════════════════════════════════════
+       DISPLAY CARD
+    ══════════════════════════════════════ */
+    .vH {
+      width: var(--card-w);
+      background: var(--card);
+      border-radius: clamp(14px, 3.5vw, 22px);
+      padding: var(--display-card-pad-v) var(--display-card-pad-h);
+      flex-shrink: 0;
+    }
+    .vH-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: clamp(8px, 1.5dvh, 16px);
+    }
+    .vH-pct {
+      font-family: 'DM Sans', sans-serif;
+      font-size: var(--fs-pct);
+      font-weight: 700;
+      letter-spacing: -.05em;
+      line-height: 1;
+    }
+    .vH-pct sup { font-size: clamp(12px, 2.8vw, 16px); font-weight: 400; opacity: .35; }
     .vH-head-r { text-align: right; }
-    .vH-badge { font-size: 11px; font-weight: 600; padding: 4px 9px; border-radius: 6px; display: inline-block; margin-bottom: 4px; }
-    .vH-frac { font-size: 11px; font-family: var(--mono); color: var(--t2); padding-right: 5px; transition: opacity .25s ease; }
+    .vH-badge {
+      font-size: var(--fs-badge);
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 6px;
+      display: inline-block;
+      margin-bottom: 3px;
+    }
+    .vH-frac {
+      font-size: var(--fs-frac);
+      font-family: var(--mono);
+      color: var(--t2);
+      padding-right: 4px;
+      transition: opacity .25s ease;
+    }
     .vH-frac .frac-arrow { color: rgba(255,255,255,.3); margin: 0 3px; }
     .vH-frac .frac-to { transition: color .25s ease; }
-    .vH-scroll-outer { position: relative; margin: 0 -4px; }
-    .vH-scroll-outer::before, .vH-scroll-outer::after { content: ''; position: absolute; top: 0; bottom: 6px; width: 28px; pointer-events: none; z-index: 2; transition: opacity .2s ease; }
-    .vH-scroll-outer::before { left: 0; background: linear-gradient(to right, #000, transparent); opacity: 0; }
+
+    /* scroll cells */
+    .vH-scroll-outer {
+      position: relative;
+      margin: 0 -4px;
+    }
+    .vH-scroll-outer::before,
+    .vH-scroll-outer::after {
+      content: '';
+      position: absolute;
+      top: 0; bottom: 6px;
+      width: 24px;
+      pointer-events: none;
+      z-index: 2;
+      transition: opacity .2s ease;
+    }
+    .vH-scroll-outer::before { left: 0;  background: linear-gradient(to right, #000, transparent); opacity: 0; }
     .vH-scroll-outer::after  { right: 0; background: linear-gradient(to left, #000, transparent); opacity: 1; }
     .vH-scroll-outer.at-end::after { opacity: 0; }
     .vH-scroll-outer.scrolled::before { opacity: 1; }
-    .vH-scroll-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 0 4px 6px; scrollbar-width: none; -ms-overflow-style: none; }
+    .vH-scroll-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 0 4px 5px;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
     .vH-scroll-wrap::-webkit-scrollbar { display: none; }
     .vH-cells { display: flex; gap: 3px; width: max-content; min-width: 100%; }
-    .vH-cell-col { display: flex; flex-direction: column; align-items: center; gap: 3px; flex-shrink: 0; }
-    .vH-cell-top { font-family: var(--mono); font-size: 9px; font-weight: 600; line-height: 1; min-height: 11px; text-align: center; white-space: nowrap; }
-    .vH-cell-sq { width: 34px; height: 34px; border-radius: 5px; display: flex; align-items: center; justify-content: center; position: relative; flex-shrink: 0; cursor: default; }
-    .vH-cell-sq-inner { width: 100%; height: 100%; border-radius: 5px; transition: background .3s ease; }
-    .vH-cell-bot { font-size: 9px; font-family: var(--mono); line-height: 1; text-align: center; white-space: nowrap; min-height: 11px; }
+    .vH-cell-col { display: flex; flex-direction: column; align-items: center; gap: 2px; flex-shrink: 0; }
+    .vH-cell-top {
+      font-family: var(--mono);
+      font-size: var(--fs-cell);
+      font-weight: 600;
+      line-height: 1;
+      min-height: 10px;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .vH-cell-sq {
+      width: var(--cell-sq);
+      height: var(--cell-sq);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .vH-cell-sq-inner { width: 100%; height: 100%; border-radius: 4px; transition: background .3s ease; }
+    .vH-cell-bot {
+      font-size: var(--fs-cell);
+      font-family: var(--mono);
+      line-height: 1;
+      text-align: center;
+      white-space: nowrap;
+      min-height: 10px;
+    }
     .vH-cell-col.is-target .vH-cell-sq { outline: 2px solid rgba(255,255,255,.5); outline-offset: 1px; }
-    .vH-divider { height: 1px; background: var(--border); margin: 14px 0 12px; }
-    .vH-carousel { position: relative; overflow: hidden; min-height: 52px; }
+
+    /* divider */
+    .vH-divider { height: 1px; background: var(--border); margin: clamp(8px, 1.3dvh, 14px) 0 clamp(6px, 1dvh, 12px); }
+
+    /* carousel */
+    .vH-carousel { position: relative; overflow: hidden; min-height: clamp(36px, 6dvh, 52px); }
     .vH-slides { display: flex; width: 200%; transition: transform .32s cubic-bezier(.4,0,.2,1); }
     .vH-slides.single { width: 100%; }
     .vH-slide { width: 50%; flex-shrink: 0; }
     .vH-slides.single .vH-slide { width: 100%; }
-    .vH-action-row { display: flex; align-items: center; gap: 10px; }
-    .vH-action-icon { font-size: 15px; width: 24px; text-align: center; flex-shrink: 0; line-height: 1; }
-    .vH-action-text { flex: 1; font-size: 12px; color: var(--t2); line-height: 1.4; }
+    .vH-action-row { display: flex; align-items: center; gap: 8px; }
+    .vH-action-icon { font-size: var(--fs-label); width: 22px; text-align: center; flex-shrink: 0; line-height: 1; }
+    .vH-action-text { flex: 1; font-size: var(--fs-action); color: var(--t2); line-height: 1.4; }
     .vH-action-text strong { color: #fff; font-weight: 700; }
-    .vH-action-num { font-size: 22px; font-weight: 700; font-family: var(--mono); flex-shrink: 0; min-width: 32px; text-align: right; }
-    .vH-dots { display: flex; justify-content: center; align-items: center; gap: 6px; margin-top: 12px; }
-    .vH-dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,.25); border: none; transition: all .3s cubic-bezier(.4,0,.2,1); cursor: pointer; flex-shrink: 0; }
-    .vH-dot.active { width: 18px; height: 5px; border-radius: 3px; background: #fff; }
-    .vH-dots.hidden { display: none; }
-    .vH-swipe-hint { position: absolute; right: 0; top: 50%; transform: translateY(-50%); font-size: 10px; color: rgba(255,255,255,.2); pointer-events: none; animation: hintFade 2s ease .8s forwards; opacity: 0; }
+    .vH-action-num {
+      font-size: var(--fs-action-num);
+      font-weight: 700;
+      font-family: var(--mono);
+      flex-shrink: 0;
+      min-width: 28px;
+      text-align: right;
+    }
+
+    /* dots */
+    .vH-dots { display: flex; justify-content: center; align-items: center; gap: 5px; margin-top: clamp(6px, 1dvh, 12px); }
+    .vH-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.25);
+      border: none;
+      transition: all .3s cubic-bezier(.4,0,.2,1);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .vH-dot.active { width: 16px; height: 5px; border-radius: 3px; background: #fff; }
+
+    .vH-swipe-hint {
+      position: absolute; right: 0; top: 50%;
+      transform: translateY(-50%);
+      font-size: 10px;
+      color: rgba(255,255,255,.2);
+      pointer-events: none;
+      animation: hintFade 2s ease .8s forwards;
+      opacity: 0;
+    }
     @keyframes hintFade {
       0%   { opacity: 0; transform: translateY(-50%) translateX(0); }
       20%  { opacity: 1; transform: translateY(-50%) translateX(-4px); }
@@ -75,15 +232,19 @@
       100% { opacity: 0; transform: translateY(-50%) translateX(-4px); }
     }
 
-    /* ─── RADIAL SLIDER CARDS ─── */
+    /* ══════════════════════════════════════
+       RADIAL SLIDER CARDS
+    ══════════════════════════════════════ */
     .card {
       position: relative;
-      width: 384px; height: 144px;
+      width: var(--card-w);
+      height: var(--radial-h);
       background: #000;
-      border-radius: 24px;
-      padding: 16px;
-      box-shadow: 0 25px 50px rgba(0,0,0,0.6);
+      border-radius: clamp(16px, 4vw, 24px);
+      padding: var(--radial-pad);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
       overflow: hidden;
+      flex-shrink: 0;
     }
     .card::after {
       content: '';
@@ -96,33 +257,49 @@
     }
     .indicator {
       position: absolute;
-      left: 50%; top: 52px;
+      left: 50%;
+      top: calc(var(--radial-pad) + 28px + clamp(12px, 1.6dvh, 18px));
       transform: translateX(-50%);
-      width: 2px; height: calc(100% - 52px);
+      width: 2px;
+      height: 60%; /* relative to card height */
       background: white;
       border-radius: 999px;
-      z-index: 20; pointer-events: none;
+      z-index: 20;
+      pointer-events: none;
       box-shadow: 0 0 3px 1px rgba(255,255,255,0.30), 0 0 8px 2px rgba(255,255,255,0.12);
     }
     .value-display {
-      position: relative; width: 100%; height: 28px;
-      margin-bottom: 24px; pointer-events: none; z-index: 10;
+      position: relative;
+      width: 100%;
+      height: 28px;
+      margin-bottom: clamp(8px, 1.5dvh, 24px);
+      pointer-events: none;
+      z-index: 10;
     }
     .value-display .label {
-      position: absolute; top: 50%; transform: translateY(-50%);
-      font-size: 13px; color: rgba(255,255,255,0.45);
-      letter-spacing: 0.01em; white-space: nowrap;
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: var(--fs-label);
+      color: rgba(255,255,255,0.45);
+      letter-spacing: 0.01em;
+      white-space: nowrap;
     }
-    .value-display .label-before { right: calc(50% + 26px); }
-    .value-display .label-after  { left:  calc(50% + 26px); }
+    .value-display .label-before { right: calc(50% + 22px); }
+    .value-display .label-after  { left:  calc(50% + 22px); }
     .value-display .val-num {
-      position: absolute; left: 50%; top: 50%;
+      position: absolute;
+      left: 50%; top: 50%;
       transform: translate(-50%, -50%);
-      font-size: 20px; font-weight: 500; color: white;
-      letter-spacing: 0.01em; text-align: center;
+      font-size: var(--fs-val);
+      font-weight: 500;
+      color: white;
+      letter-spacing: 0.01em;
+      text-align: center;
       transition: transform 0.15s cubic-bezier(0.34,1.56,0.64,1), opacity 0.1s, color 0.2s;
     }
     .value-display .val-num.at-zero { color: #ef4444; }
+
     @keyframes shake {
       0%,100% { transform: translate(-50%,-50%) translateX(0); }
       15%,75%  { transform: translate(-50%,-50%) translateX(-5px); }
@@ -131,9 +308,14 @@
       90%      { transform: translate(-50%,-50%) translateX(2px); }
     }
     .value-display .val-num.shake { animation: shake 0.4s cubic-bezier(0.36,0.07,0.19,0.97) both; }
+
     .wheel-container {
-      position: relative; width: 100%; aspect-ratio: 1;
-      cursor: grab; user-select: none; touch-action: none;
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1;
+      cursor: grab;
+      user-select: none;
+      touch-action: none;
     }
     .wheel-container:active { cursor: grabbing; }
     .wheel { position: relative; width: 100%; height: 100%; border-radius: 50%; }
@@ -150,56 +332,89 @@
       position: absolute; bottom: 0; left: 0; right: 0;
       height: calc(50% + 16px);
       background: linear-gradient(to right, #3b82f6, #eab308);
-      mix-blend-mode: multiply; pointer-events: none; z-index: 10;
+      mix-blend-mode: multiply;
+      pointer-events: none;
+      z-index: 10;
     }
 
-    /* ─── HORIZONTAL SLIDER CARD ─── */
+    /* ══════════════════════════════════════
+       HORIZONTAL SLIDER CARD
+    ══════════════════════════════════════ */
     .card-horizontal {
       position: relative;
-      width: 384px; height: 104px;
-      background: #000; border-radius: 24px;
-      padding: 16px 16px 0;
-      box-shadow: 0 25px 50px rgba(0,0,0,0.6);
+      width: var(--card-w);
+      height: var(--horiz-h);
+      background: #000;
+      border-radius: clamp(16px, 4vw, 24px);
+      padding: var(--horiz-pad) var(--horiz-pad) 0;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
       overflow: hidden;
-      display: flex; flex-direction: column;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
     }
-    .card-horizontal::before, .card-horizontal::after {
-      content: ''; position: absolute;
-      top: 0; bottom: 0; width: 72px;
-      z-index: 30; pointer-events: none;
+    .card-horizontal::before,
+    .card-horizontal::after {
+      content: '';
+      position: absolute;
+      top: 0; bottom: 0;
+      width: 64px;
+      z-index: 30;
+      pointer-events: none;
     }
     .card-horizontal::before { left: 0;  background: linear-gradient(to right, black 30%, transparent); }
     .card-horizontal::after  { right: 0; background: linear-gradient(to left,  black 30%, transparent); }
+
     .fade-bottom-h {
       position: absolute; bottom: 0; left: 0; right: 0;
-      height: 20%; background: linear-gradient(to bottom, transparent, black);
-      z-index: 30; pointer-events: none;
+      height: 20%;
+      background: linear-gradient(to bottom, transparent, black);
+      z-index: 30;
+      pointer-events: none;
     }
     .value-display-horizontal {
-      position: relative; width: 100%; height: 28px;
-      margin-bottom: 10px; pointer-events: none; z-index: 10;
+      position: relative;
+      width: 100%;
+      height: 28px;
+      margin-bottom: clamp(6px, 1dvh, 10px);
+      pointer-events: none;
+      z-index: 10;
     }
     .value-display-horizontal .label-h {
-      position: absolute; top: 50%; transform: translateY(-50%);
-      font-size: 13px; color: rgba(255,255,255,0.45);
-      letter-spacing: 0.01em; white-space: nowrap;
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: var(--fs-label);
+      color: rgba(255,255,255,0.45);
+      letter-spacing: 0.01em;
+      white-space: nowrap;
     }
     .value-display-horizontal .label-h-before { right: calc(50% + 27px); }
     .value-display-horizontal .label-h-after  { left:  calc(50% + 44px); }
     .value-display-horizontal .val-num-h {
-      position: absolute; left: 50%; top: 50%;
+      position: absolute;
+      left: 50%; top: 50%;
       transform: translate(-50%, -50%);
-      font-size: 20px; font-weight: 500; color: white;
-      letter-spacing: 0.01em; text-align: center;
+      font-size: var(--fs-val);
+      font-weight: 500;
+      color: white;
+      letter-spacing: 0.01em;
+      text-align: center;
       transition: transform 0.15s cubic-bezier(0.34,1.56,0.64,1), opacity 0.1s, color 0.2s;
     }
     .value-display-horizontal .label-h-pct {
-      position: absolute; top: 50%; transform: translateY(-50%);
-      font-size: 20px; font-weight: 500; color: white;
-      letter-spacing: 0.01em; white-space: nowrap;
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: var(--fs-val);
+      font-weight: 500;
+      color: white;
+      letter-spacing: 0.01em;
+      white-space: nowrap;
     }
     .value-display-horizontal .val-num-h.at-zero,
     .value-display-horizontal .label-h-pct.at-zero { color: #ef4444; }
+
     @keyframes shake-h {
       0%,100% { transform: translate(-50%,-50%) translateX(0); }
       15%,75%  { transform: translate(-50%,-50%) translateX(-5px); }
@@ -214,32 +429,45 @@
       45%      { transform: translateY(-50%) translateX(-4px); }
       90%      { transform: translateY(-50%) translateX(2px); }
     }
-    .value-display-horizontal .val-num-h.shake  { animation: shake-h   0.4s cubic-bezier(0.36,0.07,0.19,0.97) both; }
+    .value-display-horizontal .val-num-h.shake   { animation: shake-h   0.4s cubic-bezier(0.36,0.07,0.19,0.97) both; }
     .value-display-horizontal .label-h-pct.shake { animation: shake-pct 0.4s cubic-bezier(0.36,0.07,0.19,0.97) both; }
+
     .slider-container {
-      position: relative; width: 100%; flex: 1;
-      cursor: grab; user-select: none; touch-action: none; overflow: hidden;
+      position: relative;
+      width: 100%;
+      flex: 1;
+      cursor: grab;
+      user-select: none;
+      touch-action: none;
+      overflow: hidden;
     }
     .slider-container:active { cursor: grabbing; }
     .tick-strip {
       position: absolute; top: 0;
-      left: calc(50% - 5px); height: 100%;
-      display: flex; align-items: flex-start;
-      padding-top: 4px; will-change: transform;
+      left: calc(50% - 5px);
+      height: 100%;
+      display: flex;
+      align-items: flex-start;
+      padding-top: 4px;
+      will-change: transform;
     }
     .tick-slot { flex-shrink: 0; width: 10px; display: flex; justify-content: center; }
-    .tick-slot .tick-line.minor { width: 1.5px; height: 16px; box-shadow: 0 0 3px 1px rgba(255,255,255,0.15); }
-    .tick-slot .tick-line.major { width: 2px;   height: 22px; box-shadow: 0 0 4px 1px rgba(255,255,255,0.22); }
-    .tick-slot .tick-line.super { width: 2px;   height: 30px; box-shadow: 0 0 5px 2px rgba(255,255,255,0.28); }
+    .tick-slot .tick-line.minor { width: 1.5px; height: 14px; box-shadow: 0 0 3px 1px rgba(255,255,255,0.15); }
+    .tick-slot .tick-line.major { width: 2px;   height: 20px; box-shadow: 0 0 4px 1px rgba(255,255,255,0.22); }
+    .tick-slot .tick-line.super { width: 2px;   height: 26px; box-shadow: 0 0 5px 2px rgba(255,255,255,0.28); }
     .tick-slot .tick-line {
-      background: #e5e7eb; transform-origin: center;
+      background: #e5e7eb;
+      transform-origin: center;
       transition: transform 0.08s ease-out, opacity 0.08s ease-out;
     }
     .indicator-horizontal {
       position: absolute; top: 0; left: 50%;
       transform: translateX(-50%);
-      width: 2px; height: 100%; background: white;
-      border-radius: 999px; z-index: 20; pointer-events: none;
+      width: 2px; height: 100%;
+      background: white;
+      border-radius: 999px;
+      z-index: 20;
+      pointer-events: none;
       box-shadow: 0 0 3px 1px rgba(255,255,255,0.30), 0 0 8px 2px rgba(255,255,255,0.12);
     }
   </style>
@@ -342,7 +570,7 @@ const elHint   = $('vH-swipe-hint');
 const elSlide0 = $('vH-slide-0'), elSlide1 = $('vH-slide-1');
 const elDot0   = $('dot-0'),      elDot1   = $('dot-1');
 const elOuter  = $('vH-scroll-outer'), elWrap = $('vH-scroll-wrap');
-const elCard   = $('vH');
+const elCard   = $('vH'); // used for touch swipe
 
 let currentSlide = 0, totalSlides = 1, lastS = null, lastCase = 'above';
 
@@ -404,19 +632,20 @@ function buildConvinceSteps(s) {
 function renderCells(steps, c) {
   const intermediates = steps.filter(r => !r.isCurrent && !r.isTarget);
   const count = intermediates.length;
+  const intermediateIdx = new Map(intermediates.map((r, i) => [r, i]));
   return steps.map((row) => {
     let t;
     if (row.isCurrent) t = 0.08;
     else if (row.isTarget) t = 1.0;
     else {
-      const pos = intermediates.indexOf(row);
+      const pos = intermediateIdx.get(row);
       t = count <= 1 ? 0.5 : 0.22 + (pos / (count-1)) * 0.63;
     }
     const bg       = gradientColor(c.main, t);
     const topColor = row.isCurrent ? 'rgba(255,255,255,0.25)' : row.isTarget ? c.text : `rgba(255,255,255,${(0.2+t*0.6).toFixed(2)})`;
     const botColor = row.isCurrent ? 'rgba(255,255,255,0.2)'  : row.isTarget ? c.text : `rgba(255,255,255,${(0.15+t*0.5).toFixed(2)})`;
     const botLabel = row.isCurrent ? `${row.attended}/${row.total}` : row.label;
-    return `<div class="vH-cell-col${row.isTarget?' is-target':''}${row.isCurrent?' is-current':''}">
+    return `<div class="vH-cell-col${row.isTarget?' is-target':''}">
       <div class="vH-cell-top" style="color:${topColor}">${row.pct}%</div>
       <div class="vH-cell-sq"><div class="vH-cell-sq-inner" style="background:${bg}"></div></div>
       <div class="vH-cell-bot" style="color:${botColor}">${botLabel}</div>
@@ -470,7 +699,7 @@ function updateCard(s) {
   elDot0.classList.add('active'); elDot1.classList.remove('active');
   if (s.case === 'impossible') {
     totalSlides = 1;
-    elSlides.classList.add('single'); elDots.classList.add('hidden'); elDot1.style.display = ''; elHint.style.display = 'none';
+    elSlides.classList.add('single'); elDot1.style.display = 'none'; elHint.style.display = 'none';
     elSlide0.innerHTML = `<div class="vH-action-row">
       <div class="vH-action-icon" style="color:${c.text}">✗</div>
       <div class="vH-action-text" style="color:rgba(255,255,255,0.4)">100% is no longer achievable. Talk to your professor.</div>
@@ -479,7 +708,7 @@ function updateCard(s) {
     elCells.innerHTML = renderCells([cell], c);
   } else if (s.case === 'above') {
     totalSlides = 1;
-    elSlides.classList.add('single'); elDots.classList.remove('hidden'); elDot1.style.display = 'none'; elHint.style.display = 'none';
+    elSlides.classList.add('single'); elDot1.style.display = 'none'; elHint.style.display = 'none';
     elSlide0.innerHTML = `<div class="vH-action-row">
       <div class="vH-action-icon" style="color:${c.text}">✓</div>
       <div class="vH-action-text">You can <strong>skip ${s.safeBunks} class${s.safeBunks!==1?'es':''}</strong> safely</div>
@@ -488,7 +717,7 @@ function updateCard(s) {
     elCells.innerHTML = renderCells(buildSteps(s), c);
   } else {
     totalSlides = 2;
-    elSlides.classList.remove('single'); elDots.classList.remove('hidden'); elDot1.style.display = ''; elHint.style.display = '';
+    elSlides.classList.remove('single'); elDot1.style.display = ''; elHint.style.display = '';
     elSlide0.innerHTML = `<div class="vH-action-row">
       <div class="vH-action-icon" style="color:${c.text}">↑</div>
       <div class="vH-action-text">Attend <strong>${s.attendNeeded} more class${s.attendNeeded!==1?'es':''}</strong> to reach ${s.target}%</div>
@@ -503,7 +732,6 @@ function updateCard(s) {
   }
   updateFrac(s, c, 0);
   elWrap.scrollLeft = 0;
-  elOuter.classList.add('at-start');
   elOuter.classList.remove('scrolled', 'at-end');
   setTimeout(() => { if (elWrap.scrollWidth <= elWrap.clientWidth) elOuter.classList.add('at-end'); }, 50);
   scrollToTarget();
@@ -511,9 +739,8 @@ function updateCard(s) {
 
 // Master update — called whenever any slider changes
 function onValuesChanged() {
-  gAttended = Math.min(gAttended, gTotal); // clamp attended ≤ total
+  gAttended = Math.min(gAttended, gTotal);
   updateCard(calc(gTotal, gAttended, gTarget));
-  // Keep attended slider clamped visually
   s2.clampToMax();
 }
 
@@ -616,7 +843,6 @@ function createRadialSlider({ wheelEl, valEl, containerEl, getMaxValue, onValueS
   let momentumRAF = null, rubberAnchorX = null, rubberOffset = 0, rubberRafId = null;
   let shakeDebounce = false, lastDisplayedValue = initialValue, lastTickValue = initialValue;
 
-  // Set initial visual position
   wheelEl.style.transform = `rotate(${-accumulatedRotation}deg)`;
   setDisplayImmediate(valEl, initialValue);
 
@@ -647,12 +873,12 @@ function createRadialSlider({ wheelEl, valEl, containerEl, getMaxValue, onValueS
   }
   function animateRubberReturn() {
     if (rubberRafId) cancelAnimationFrame(rubberRafId);
-    const start = rubberOffset, t0 = performance.now(), dur = 420;
+    const start = rubberOffset, base = accumulatedRotation, t0 = performance.now(), dur = 420;
     function step(now) {
       const t = Math.min((now - t0) / dur, 1);
       rubberOffset = start * (1 - (1 - Math.pow(1 - t, 3)));
-      applyVisualRotation(0, rubberOffset);
-      rubberRafId = t < 1 ? requestAnimationFrame(step) : (rubberOffset = 0, applyVisualRotation(0), null);
+      applyVisualRotation(base, rubberOffset);
+      rubberRafId = t < 1 ? requestAnimationFrame(step) : (rubberOffset = 0, applyVisualRotation(base), null);
     }
     rubberRafId = requestAnimationFrame(step);
   }
@@ -677,7 +903,7 @@ function createRadialSlider({ wheelEl, valEl, containerEl, getMaxValue, onValueS
       lastTime = now;
       const newRot = accumulatedRotation + vel * dt;
       if (newRot < 0) { accumulatedRotation = 0; applyVisualRotation(0); updateDisplay(0); triggerBoundaryFeedback(); settle(0); return; }
-      if (newRot > maxRot()) { accumulatedRotation = maxRot(); applyVisualRotation(maxRot()); updateDisplay(getMaxValue()); return; }
+      if (newRot > maxRot()) { finishMomentum(maxRot()); return; }
       accumulatedRotation = newRot;
       applyVisualRotation(accumulatedRotation);
       updateDisplay(getValueFromRotation(accumulatedRotation));
@@ -713,8 +939,15 @@ function createRadialSlider({ wheelEl, valEl, containerEl, getMaxValue, onValueS
         setTimeout(() => { valEl.classList.remove('shake'); setTimeout(() => valEl.classList.remove('at-zero'), 600); shakeDebounce = false; }, 420);
       }
     } else if (desired > maxRot()) {
-      accumulatedRotation = maxRot(); rubberOffset = 0;
-      applyVisualRotation(maxRot()); updateDisplay(getMaxValue());
+      accumulatedRotation = maxRot();
+      if (rubberAnchorX === null) { rubberAnchorX = clientX; settle(getMaxValue()); }
+      rubberOffset = -RUBBER_MAX * (1 - Math.exp(-Math.max(0, rubberAnchorX - clientX) / 40));
+      applyVisualRotation(maxRot(), rubberOffset); updateDisplay(getMaxValue());
+      if (!shakeDebounce) {
+        shakeDebounce = true;
+        valEl.classList.add('at-zero', 'shake');
+        setTimeout(() => { valEl.classList.remove('shake'); setTimeout(() => valEl.classList.remove('at-zero'), 600); shakeDebounce = false; }, 420);
+      }
     } else {
       rubberAnchorX = null; rubberOffset = 0;
       accumulatedRotation = desired;
@@ -727,6 +960,7 @@ function createRadialSlider({ wheelEl, valEl, containerEl, getMaxValue, onValueS
     if (!isDragging) return;
     isDragging = false;
     if (accumulatedRotation === 0 && rubberOffset > 0) { rubberAnchorX = null; animateRubberReturn(); return; }
+    if (accumulatedRotation === maxRot() && rubberOffset < 0) { rubberAnchorX = null; animateRubberReturn(); return; }
     rubberOffset = 0; rubberAnchorX = null;
     startMomentum(velocityDps);
   }
@@ -771,10 +1005,11 @@ window.addEventListener('touchend',  ()  => { s1.onDragEnd(); s2.onDragEnd(); })
 
 // ── Horizontal slider (Target %) ──
 (function createHorizontalSlider() {
-  const TICK_COUNT_H = 101;
+  const TICK_COUNT_H = 61;
+  const MIN_VALUE_H  = 40;
   const MAX_VALUE_H  = 100;
   const TICK_PX      = 10;
-  const MAX_OFFSET   = MAX_VALUE_H * TICK_PX;
+  const MAX_OFFSET   = (MAX_VALUE_H - MIN_VALUE_H) * TICK_PX;
   const RUBBER_MAX_H = 28;
   const PAD          = 20;
 
@@ -816,11 +1051,10 @@ window.addEventListener('touchend',  ()  => { s1.onDragEnd(); s2.onDragEnd(); })
     });
   }
 
-  const getValueFromOffset = px => Math.max(0, Math.min(MAX_VALUE_H, Math.round(px / TICK_PX)));
+  const getValueFromOffset = px => Math.max(MIN_VALUE_H, Math.min(MAX_VALUE_H, Math.round(px / TICK_PX) + MIN_VALUE_H));
   const snapToNearest      = px => Math.round(Math.max(0, Math.min(MAX_OFFSET, px)) / TICK_PX) * TICK_PX;
 
-  // Set initial position
-  let offsetPx = DEFAULT_TARGET * TICK_PX;
+  let offsetPx = (DEFAULT_TARGET - MIN_VALUE_H) * TICK_PX;
   valEl.textContent = DEFAULT_TARGET;
 
   function applyVisualOffset(logical, extra = 0, animate = false) {
@@ -829,7 +1063,7 @@ window.addEventListener('touchend',  ()  => { s1.onDragEnd(); s2.onDragEnd(); })
     requestAnimationFrame(apply3DEffect);
   }
 
-  applyVisualOffset(offsetPx); // render initial position
+  applyVisualOffset(offsetPx);
 
   let isDragging = false, lastClientX = 0, lastMoveTime = 0, velocityPxS = 0;
   let momentumRAF = null, rubberOffset = 0, rubberRafId = null;
@@ -840,13 +1074,13 @@ window.addEventListener('touchend',  ()  => { s1.onDragEnd(); s2.onDragEnd(); })
     if (Math.abs(val - lastTickValue) >= 1) { playTick(); triggerHaptic(); lastTickValue = val; }
     valEl.style.transform = 'translate(-50%,-50%) scale(1.2)';
     valEl.style.opacity   = '0.7';
+    gTarget = val;
+    onValuesChanged();
     setTimeout(() => {
       valEl.textContent     = val;
       valEl.style.transform = 'translate(-50%,-50%) scale(1)';
       valEl.style.opacity   = '1';
       repositionLabels();
-      gTarget = val;
-      onValuesChanged();
     }, 60);
     lastDisplayedValue = val;
   }
@@ -862,20 +1096,25 @@ window.addEventListener('touchend',  ()  => { s1.onDragEnd(); s2.onDragEnd(); })
     }
     rubberRafId = requestAnimationFrame(step);
   }
-  function triggerBoundaryFeedback(dir) {
+
+  function triggerShakeH() {
+    if (shakeDebounce) return;
+    shakeDebounce = true;
+    valEl.classList.add('at-zero', 'shake'); pctEl.classList.add('at-zero', 'shake');
+    setTimeout(() => {
+      valEl.classList.remove('shake'); pctEl.classList.remove('shake');
+      setTimeout(() => { valEl.classList.remove('at-zero'); pctEl.classList.remove('at-zero'); }, 600);
+      shakeDebounce = false;
+    }, 420);
+  }
+
+  function triggerBoundaryFeedback(dir, boundaryVal) {
     rubberOffset = dir * -8; applyVisualOffset(offsetPx, rubberOffset);
     setTimeout(animateRubberReturn, 30);
-    if (!shakeDebounce) {
-      shakeDebounce = true;
-      valEl.classList.add('at-zero', 'shake'); pctEl.classList.add('at-zero', 'shake');
-      valEl.textContent = '0'; lastDisplayedValue = 0;
-      setTimeout(() => {
-        valEl.classList.remove('shake'); pctEl.classList.remove('shake');
-        setTimeout(() => { valEl.classList.remove('at-zero'); pctEl.classList.remove('at-zero'); }, 600);
-        shakeDebounce = false;
-      }, 420);
-    }
+    if (boundaryVal !== undefined) { valEl.textContent = boundaryVal; lastDisplayedValue = boundaryVal; }
+    triggerShakeH();
   }
+
   function finishMomentum(px) {
     const snapped = snapToNearest(px);
     offsetPx = snapped; applyVisualOffset(snapped, 0, true);
@@ -889,8 +1128,8 @@ window.addEventListener('touchend',  ()  => { s1.onDragEnd(); s2.onDragEnd(); })
       const dt = Math.min((now - lastTime) / 1000, 0.05);
       lastTime = now;
       const newOff = offsetPx + vel * dt;
-      if (newOff < 0) { offsetPx = 0; applyVisualOffset(0); updateDisplay(0); triggerBoundaryFeedback(-1); return; }
-      if (newOff > MAX_OFFSET) { offsetPx = MAX_OFFSET; applyVisualOffset(MAX_OFFSET); updateDisplay(MAX_VALUE_H); return; }
+      if (newOff < 0)          { offsetPx = 0;          applyVisualOffset(0);          updateDisplay(MIN_VALUE_H); triggerBoundaryFeedback(-1, MIN_VALUE_H); return; }
+      if (newOff > MAX_OFFSET) { offsetPx = MAX_OFFSET; applyVisualOffset(MAX_OFFSET); updateDisplay(MAX_VALUE_H); triggerBoundaryFeedback(1,  MAX_VALUE_H); return; }
       offsetPx = newOff; applyVisualOffset(offsetPx); updateDisplay(getValueFromOffset(offsetPx));
       vel *= 0.92;
       momentumRAF = Math.abs(vel) > 15 ? requestAnimationFrame(step) : (finishMomentum(offsetPx), null);
@@ -913,9 +1152,13 @@ window.addEventListener('touchend',  ()  => { s1.onDragEnd(); s2.onDragEnd(); })
     const desired = offsetPx + (-dx * sens);
     if (desired < 0) {
       rubberOffset = -Math.min(RUBBER_MAX_H * (1 - Math.exp(-Math.abs(desired) / (RUBBER_MAX_H * 2))), RUBBER_MAX_H);
-      applyVisualOffset(0, rubberOffset); updateDisplay(0);
+      offsetPx = 0; applyVisualOffset(0, rubberOffset); updateDisplay(MIN_VALUE_H);
+      triggerShakeH();
     } else if (desired > MAX_OFFSET) {
-      offsetPx = MAX_OFFSET; rubberOffset = 0; applyVisualOffset(MAX_OFFSET); updateDisplay(MAX_VALUE_H);
+      const over = desired - MAX_OFFSET;
+      rubberOffset = Math.min(RUBBER_MAX_H * (1 - Math.exp(-over / (RUBBER_MAX_H * 2))), RUBBER_MAX_H);
+      offsetPx = MAX_OFFSET; applyVisualOffset(MAX_OFFSET, rubberOffset); updateDisplay(MAX_VALUE_H);
+      triggerShakeH();
     } else {
       rubberOffset = 0; offsetPx = desired; applyVisualOffset(offsetPx); updateDisplay(getValueFromOffset(offsetPx));
     }
@@ -926,6 +1169,7 @@ window.addEventListener('touchend',  ()  => { s1.onDragEnd(); s2.onDragEnd(); })
     if (!isDragging) return;
     isDragging = false;
     if (offsetPx <= 0 && rubberOffset < 0) { offsetPx = 0; triggerBoundaryFeedback(-1); return; }
+    if (offsetPx >= MAX_OFFSET && rubberOffset > 0) { offsetPx = MAX_OFFSET; animateRubberReturn(); return; }
     rubberOffset = 0; startMomentum(velocityPxS);
   }
 
