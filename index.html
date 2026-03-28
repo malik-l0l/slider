@@ -200,6 +200,17 @@
 
     /* divider */
     .vH-divider { height: 1px; background: var(--border); margin: clamp(8px, 1.3dvh, 14px) 0 clamp(6px, 1dvh, 12px); }
+    .vH-divider-top { margin-top: 0; margin-bottom: clamp(8px, 1.3dvh, 14px); }
+
+    /* summary line */
+    .vH-summary {
+      font-size: clamp(10px, 1.9vw, 11px);
+      font-family: var(--mono);
+      color: rgba(255,255,255,0.3);
+      letter-spacing: 0.05em;
+      text-align: center;
+      padding-bottom: clamp(6px, 1dvh, 10px);
+    }
 
     /* carousel */
     .vH-carousel { position: relative; overflow: hidden; min-height: clamp(36px, 6dvh, 52px); }
@@ -490,6 +501,10 @@
       transform-origin: center;
       transition: transform 0.08s ease-out, opacity 0.08s ease-out;
     }
+    .tick-slot .tick-line.landmark {
+      background: #fff;
+      box-shadow: 0 0 6px 2px rgba(255,255,255,0.6), 0 0 14px 4px rgba(255,255,255,0.25);
+    }
     .indicator-horizontal {
       position: absolute; top: 0; left: 50%;
       transform: translateX(-50%);
@@ -509,6 +524,8 @@
 
 <!-- ── Display Card ── -->
 <div class="vH" id="vH">
+  <div class="vH-summary" id="vH-summary"></div>
+  <div class="vH-divider vH-divider-top"></div>
   <div class="vH-head">
     <div class="vH-pct" id="vH-pct"></div>
     <div class="vH-head-r">
@@ -619,7 +636,7 @@ let gTarget   = _saved ? _saved.target   : DEFAULT_TARGET;
 const $ = id => document.getElementById(id);
 const elPct    = $('vH-pct'),  elBadge  = $('vH-badge'), elFrac  = $('vH-frac');
 const elCells  = $('vH-cells'), elSlides = $('vH-slides'), elDots  = $('vH-dots');
-const elHint   = $('vH-swipe-hint');
+const elHint   = $('vH-swipe-hint'), elSummary = $('vH-summary');
 const elSlide0 = $('vH-slide-0'), elSlide1 = $('vH-slide-1');
 const elDot0   = $('dot-0'),      elDot1   = $('dot-1');
 const elOuter  = $('vH-scroll-outer'), elWrap = $('vH-scroll-wrap');
@@ -751,6 +768,7 @@ function updateCard(s) {
   elPct.style.color = c.text;
   elBadge.style.cssText = `background:${c.light};color:${c.text}`;
   elBadge.textContent = s.case==='above' ? `Above ${s.target}%` : s.case==='impossible' ? 'Impossible' : `Below ${s.target}%`;
+  elSummary.textContent = `${s.attended} of ${s.total} attended · target ${s.target}%`;
   currentSlide = 0;
   elSlides.style.transform = 'translateX(0%)';
   elSlide1.innerHTML = ''; elSlide1.className = 'vH-slide';
@@ -965,6 +983,26 @@ function playTick() {
     });
   } catch(e) {}
 }
+function playLimitError() {
+  try {
+    const ctx = getAudioCtx();
+    // Two descending thuds — feels like a hard stop
+    [[180, 0.18, 0, 0.08], [120, 0.12, 0.07, 0.13]].forEach(([f, vol, delay, dur]) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'sine'; o.frequency.value = f;
+      const t = ctx.currentTime + delay;
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(vol, t + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(t); o.stop(t + dur);
+    });
+  } catch(e) {}
+}
+function triggerLimitFeedback() {
+  playLimitError();
+  if (navigator.vibrate) navigator.vibrate([30, 20, 30]);
+}
 function triggerHaptic() { if (navigator.vibrate) navigator.vibrate([14, 4, 14]); }
 
 function setDisplayImmediate(valEl, val) {
@@ -1088,6 +1126,7 @@ function createRadialSlider({ wheelEl, valEl, containerEl, getMaxValue, getMinVa
       applyVisualRotation(0, rubberOffset); updateDisplay(minVal());
       if (!shakeDebounce) {
         shakeDebounce = true;
+        triggerLimitFeedback();
         valEl.classList.add('at-zero', 'shake');
         setTimeout(() => { valEl.classList.remove('shake'); setTimeout(() => valEl.classList.remove('at-zero'), 600); shakeDebounce = false; }, 420);
       }
@@ -1098,6 +1137,7 @@ function createRadialSlider({ wheelEl, valEl, containerEl, getMaxValue, getMinVa
       applyVisualRotation(maxRot(), rubberOffset); updateDisplay(getMaxValue());
       if (!shakeDebounce) {
         shakeDebounce = true;
+        triggerLimitFeedback();
         valEl.classList.add('at-zero', 'shake');
         setTimeout(() => { valEl.classList.remove('shake'); setTimeout(() => valEl.classList.remove('at-zero'), 600); shakeDebounce = false; }, 420);
       }
@@ -1176,13 +1216,17 @@ window.addEventListener('touchend',  ()  => { s1.onDragEnd(); s2.onDragEnd(); })
     pctEl.style.left = `calc(50% + ${valEl.offsetWidth / 2}px)`;
   }
 
+  const LANDMARKS = new Set([75, 90]);
+
   const frag2 = document.createDocumentFragment();
   for (let i = -PAD; i < TICK_COUNT_H + PAD; i++) {
     const slot = document.createElement('div');
     slot.className = 'tick-slot';
     const line = document.createElement('div');
     const mod = ((i % 10) + 10) % 10;
-    line.className = 'tick-line ' + (mod === 0 ? 'super' : mod === 5 ? 'major' : 'minor');
+    const val = i + MIN_VALUE_H;
+    const isLandmark = LANDMARKS.has(val);
+    line.className = 'tick-line ' + (mod === 0 ? 'super' : mod === 5 ? 'major' : 'minor') + (isLandmark ? ' landmark' : '');
     if (i < 0 || i >= TICK_COUNT_H) line.style.opacity = '0.95';
     slot.appendChild(line);
     frag2.appendChild(slot);
@@ -1201,12 +1245,24 @@ window.addEventListener('touchend',  ()  => { s1.onDragEnd(); s2.onDragEnd(); })
       const cv   = Math.pow(Math.cos(nd * Math.PI / 2.5), 0.7);
       const line = slot.firstElementChild;
       line.style.transform = `scaleY(${0.25 + cv * 0.75}) translateY(${nd * 8}px)`;
-      line.style.opacity   = 0.3 + cv * 0.7;
+      line.style.opacity   = line.classList.contains('landmark')
+        ? Math.max(0.55, 0.3 + cv * 0.7)
+        : 0.3 + cv * 0.7;
     });
   }
 
   const getValueFromOffset = px => Math.max(MIN_VALUE_H, Math.min(MAX_VALUE_H, Math.round(px / TICK_PX) + MIN_VALUE_H));
-  const snapToNearest      = px => Math.round(Math.max(0, Math.min(MAX_OFFSET, px)) / TICK_PX) * TICK_PX;
+  const LANDMARK_OFFSETS = new Set([...LANDMARKS].map(v => (v - MIN_VALUE_H) * TICK_PX));
+  const MAGNET_RADIUS_PX = 18; // px within which landmark pulls the finger in
+
+  const snapToNearest = px => {
+    const clamped = Math.max(0, Math.min(MAX_OFFSET, px));
+    // Check if near a landmark — if so, snap to it
+    for (const lOff of LANDMARK_OFFSETS) {
+      if (Math.abs(clamped - lOff) <= MAGNET_RADIUS_PX) return lOff;
+    }
+    return Math.round(clamped / TICK_PX) * TICK_PX;
+  };
 
   let offsetPx = (gTarget - MIN_VALUE_H) * TICK_PX;  // restored from localStorage or default
   valEl.textContent = gTarget;
@@ -1254,6 +1310,7 @@ window.addEventListener('touchend',  ()  => { s1.onDragEnd(); s2.onDragEnd(); })
   function triggerShakeH() {
     if (shakeDebounce) return;
     shakeDebounce = true;
+    triggerLimitFeedback();
     valEl.classList.add('at-zero', 'shake'); pctEl.classList.add('at-zero', 'shake');
     setTimeout(() => {
       valEl.classList.remove('shake'); pctEl.classList.remove('shake');
