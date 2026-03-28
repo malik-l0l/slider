@@ -82,7 +82,40 @@
       max-height: 100dvh;
     }
 
-    /* ── Canvas noise overlay ── */
+    /* ── Built with credit ── */
+    .built-with {
+      position: fixed;
+      bottom: max(10px, env(safe-area-inset-bottom));
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+      pointer-events: auto;
+    }
+    .built-with a {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-family: var(--mono);
+      font-size: clamp(10px, 1.8vw, 11px);
+      letter-spacing: 0.06em;
+      color: rgba(255,255,255,0.22);
+      text-decoration: none;
+      padding: 3px 8px;
+      border-radius: 20px;
+      transition: color 0.3s ease;
+      white-space: nowrap;
+    }
+    .built-with a:hover { color: rgba(255,255,255,0.55); }
+    .built-with-name {
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      text-decoration-color: rgba(255,255,255,0.2);
+    }
+    .built-with-label {
+      transition: opacity 1.2s ease;
+    }
+    .built-with-label.fade-out { opacity: 0; }
+    .built-with-label.fade-in  { opacity: 1; }
     #noise-canvas {
       position: fixed;
       inset: 0;
@@ -515,9 +548,19 @@
       pointer-events: none;
       box-shadow: 0 0 3px 1px rgba(255,255,255,0.30), 0 0 8px 2px rgba(255,255,255,0.12);
     }
+    /* ══════════════════════════════════════
+       TOP BAR
+    ══════════════════════════════════════ */
   </style>
 </head>
 <body>
+
+<!-- ── Built with credit ── -->
+<div class="built-with">
+  <a href="https://github.com/malik-l0l" target="_blank" rel="noopener">
+    <span class="built-with-label" id="built-with-label">built with <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:-1px;opacity:0.7"><path d="M12 21.593c-5.63-5.539-11-10.297-11-14.402 0-3.791 3.068-5.191 5.281-5.191 1.312 0 4.151.501 5.719 4.457 1.59-3.968 4.464-4.447 5.726-4.447 2.54 0 5.274 1.621 5.274 5.181 0 4.069-5.136 8.625-11 14.402z"/></svg> by <span class="built-with-name">malik-l0l</span></span>
+  </a>
+</div>
 
 <!-- ── Noise canvas ── -->
 <canvas id="noise-canvas" aria-hidden="true"></canvas>
@@ -1563,6 +1606,43 @@ onValuesChanged();
   resizeCanvas();
   drawNoise();
   window.addEventListener('resize', () => { resizeCanvas(); drawNoise(); });
+})();
+// ── Built-with tagline cycler ──
+(function () {
+  const CREDIT_HTML = `built with <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:-1px;opacity:0.7"><path d="M12 21.593c-5.63-5.539-11-10.297-11-14.402 0-3.791 3.068-5.191 5.281-5.191 1.312 0 4.151.501 5.719 4.457 1.59-3.968 4.464-4.447 5.726-4.447 2.54 0 5.274 1.621 5.274 5.181 0 4.069-5.136 8.625-11 14.402z"/></svg> by <span class="built-with-name">malik-l0l</span>`;
+  const TAGLINES = [
+    'for those who calculate before they bunk',
+    'built so you can bunk',
+    'skip smarter, not harder',
+    'for the ones who never bunk blind',
+    'bunk responsibly',
+    'built to bunk better',
+    'built for the bunk-conscious',
+  ];
+
+  const el = document.getElementById('built-with-label');
+  const INTERVAL = 6000;
+  const FADE     = 1200;
+
+  // Interleave: credit, tagline[0], credit, tagline[1], ...
+  const sequence = [];
+  TAGLINES.forEach(t => { sequence.push({ html: CREDIT_HTML, isCredit: true }); sequence.push({ html: t, isCredit: false }); });
+  sequence.push({ html: CREDIT_HTML, isCredit: true }); // end on credit
+
+  let idx = 0;
+
+  function next() {
+    // fade out
+    el.classList.add('fade-out');
+    setTimeout(() => {
+      idx = (idx + 1) % sequence.length;
+      el.innerHTML = sequence[idx].html;
+      // fade in
+      el.classList.remove('fade-out');
+    }, FADE);
+  }
+
+  setInterval(next, INTERVAL);
 })();
 </script>
 </body>
