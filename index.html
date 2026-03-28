@@ -46,15 +46,15 @@
       --horiz-pad  : clamp(10px, 1.4dvh, 16px);
 
       /* Typography scale */
-      --fs-pct     : clamp(32px, 6.5vw, 44px);
-      --fs-badge   : clamp(9px, 2.2vw, 11px);
-      --fs-frac    : clamp(9px, 2.2vw, 11px);
-      --fs-label   : clamp(11px, 2.6vw, 13px);
-      --fs-val     : clamp(17px, 4vw,   22px);
-      --fs-action  : clamp(10px, 2.4vw, 12px);
-      --fs-action-num : clamp(18px, 4.5vw, 22px);
-      --fs-cell    : clamp(8px, 1.9vw, 9px);
-      --cell-sq    : clamp(26px, 6.5vw, 34px);
+      --fs-pct     : clamp(36px, 6.5vw, 44px);
+      --fs-badge   : clamp(12px, 2.2vw, 13px);
+      --fs-frac    : clamp(12px, 2.2vw, 13px);
+      --fs-label   : clamp(13px, 2.6vw, 14px);
+      --fs-val     : clamp(19px, 4vw,   22px);
+      --fs-action  : clamp(13px, 2.4vw, 14px);
+      --fs-action-num : clamp(20px, 4.5vw, 22px);
+      --fs-cell    : clamp(11px, 1.9vw, 12px);
+      --cell-sq    : clamp(30px, 6.5vw, 34px);
     }
 
     html, body {
@@ -117,7 +117,7 @@
       letter-spacing: -.05em;
       line-height: 1;
     }
-    .vH-pct sup { font-size: clamp(12px, 2.8vw, 16px); font-weight: 400; opacity: .35; }
+    .vH-pct sup { font-size: clamp(14px, 2.8vw, 16px); font-weight: 400; opacity: .35; }
     .vH-head-r { text-align: right; }
     .vH-badge {
       font-size: var(--fs-badge);
@@ -126,6 +126,7 @@
       border-radius: 6px;
       display: inline-block;
       margin-bottom: 3px;
+      letter-spacing: 0.04em;
     }
     .vH-frac {
       font-size: var(--fs-frac);
@@ -133,8 +134,9 @@
       color: var(--t2);
       padding-right: 4px;
       transition: opacity .25s ease;
+      letter-spacing: 0.03em;
     }
-    .vH-frac .frac-arrow { color: rgba(255,255,255,.3); margin: 0 3px; }
+    .vH-frac .frac-arrow { color: rgba(255,255,255,.3); margin: 0 5px; letter-spacing: 0; }
     .vH-frac .frac-to { transition: color .25s ease; }
 
     /* scroll cells */
@@ -207,7 +209,7 @@
     .vH-slides.single .vH-slide { width: 100%; }
     .vH-action-row { display: flex; align-items: center; gap: 8px; }
     .vH-action-icon { font-size: var(--fs-label); width: 22px; text-align: center; flex-shrink: 0; line-height: 1; }
-    .vH-action-text { flex: 1; font-size: var(--fs-action); color: var(--t2); line-height: 1.4; }
+    .vH-action-text { flex: 1; font-size: var(--fs-action); color: var(--t2); line-height: 1.4; letter-spacing: 0.03em; }
     .vH-action-text strong { color: #fff; font-weight: 700; }
     .vH-action-num {
       font-size: var(--fs-action-num);
@@ -228,13 +230,26 @@
       transition: all .3s cubic-bezier(.4,0,.2,1);
       cursor: pointer;
       flex-shrink: 0;
+      position: relative;
+      overflow: hidden;
     }
-    .vH-dot.active { width: 16px; height: 5px; border-radius: 3px; background: #fff; }
+    .vH-dot.active { width: 16px; height: 5px; border-radius: 3px; background: rgba(255,255,255,.25); }
+    /* progress fill inside the active (line) indicator */
+    .vH-dot.active::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      height: 100%;
+      width: var(--dot-progress, 0%);
+      background: #fff;
+      border-radius: 3px;
+      transition: none;
+    }
 
     .vH-swipe-hint {
       position: absolute; right: 0; top: 50%;
       transform: translateY(-50%);
-      font-size: 10px;
+      font-size: 13px;
       color: rgba(255,255,255,.2);
       pointer-events: none;
       animation: hintFade 2s ease .8s forwards;
@@ -680,8 +695,8 @@ function renderCells(steps, c) {
       t = count <= 1 ? 0.5 : 0.22 + (pos / (count-1)) * 0.63;
     }
     const bg       = gradientColor(c.main, t);
-    const topColor = row.isCurrent ? 'rgba(255,255,255,0.25)' : row.isTarget ? c.text : `rgba(255,255,255,${(0.2+t*0.6).toFixed(2)})`;
-    const botColor = row.isCurrent ? 'rgba(255,255,255,0.2)'  : row.isTarget ? c.text : `rgba(255,255,255,${(0.15+t*0.5).toFixed(2)})`;
+    const topColor = row.isCurrent ? 'rgba(255,255,255,0.55)' : row.isTarget ? c.text : 'rgba(255,255,255,0.7)';
+    const botColor = row.isCurrent ? 'rgba(255,255,255,0.45)' : row.isTarget ? c.text : 'rgba(255,255,255,0.6)';
     const botLabel = row.isCurrent ? `${row.attended}/${row.total}` : row.label;
     return `<div class="vH-cell-col${row.isTarget?' is-target':''}">
       <div class="vH-cell-top" style="color:${topColor}">${row.pct}%</div>
@@ -693,7 +708,12 @@ function renderCells(steps, c) {
 
 function updateFrac(s, c, slideIdx) {
   const from = `${s.attended}/${s.total}`;
-  if (s.case === 'impossible') { elFrac.innerHTML = from; return; }
+  if (s.case === 'impossible') {
+    const from = `${s.attended}/${s.total}`;
+    const toA  = s.total;
+    elFrac.innerHTML = `${from}<span class="frac-arrow">→</span><span class="frac-to" style="color:${c.text}">${toA}/${s.total}</span>`;
+    return;
+  }
   let toA, toT;
   if (s.case === 'above') {
     toA = s.attended; toT = s.total + s.safeBunks;
@@ -730,7 +750,7 @@ function updateCard(s) {
   elPct.innerHTML = `${s.pct}<sup>%</sup>`;
   elPct.style.color = c.text;
   elBadge.style.cssText = `background:${c.light};color:${c.text}`;
-  elBadge.textContent = s.case==='above' ? 'Safe ✓' : s.case==='impossible' ? 'Impossible' : 'Below Target';
+  elBadge.textContent = s.case==='above' ? `Above ${s.target}%` : s.case==='impossible' ? 'Impossible' : `Below ${s.target}%`;
   currentSlide = 0;
   elSlides.style.transform = 'translateX(0%)';
   elSlide1.innerHTML = ''; elSlide1.className = 'vH-slide';
@@ -738,19 +758,24 @@ function updateCard(s) {
   if (s.case === 'impossible') {
     totalSlides = 1;
     elSlides.classList.add('single'); elDot1.style.display = 'none'; elHint.style.display = 'none';
+    const convinceCount = s.total - s.attended;
     elSlide0.innerHTML = `<div class="vH-action-row">
-      <div class="vH-action-icon" style="color:${c.text}">✗</div>
-      <div class="vH-action-text" style="color:rgba(255,255,255,0.4)">100% is no longer achievable. Talk to your professor.</div>
+      <div class="vH-action-icon" style="color:${c.text}">✦</div>
+      <div class="vH-action-text" style="color:rgba(255,255,255,0.4)">Can't reach 100% by attending — but convince your teacher to mark <strong style="color:${c.text}">${convinceCount} absent${convinceCount!==1?'s':''} as present</strong></div>
     </div>`;
-    const cell = { attended:s.attended, total:s.total, pct:s.pct, label:'now', isCurrent:true, isTarget:false };
-    elCells.innerHTML = renderCells([cell], c);
+    const impossibleSteps = [{ attended:s.attended, total:s.total, pct:s.pct, label:'now', isCurrent:true, isTarget:false }];
+    for (let i = 1; i <= convinceCount; i++) {
+      const a = s.attended + i, p = Math.round(a / s.total * 100);
+      impossibleSteps.push({ attended:a, total:s.total, pct:p, label:`+${i}`, isCurrent:false, isTarget:p >= 100 });
+      if (p >= 100) break;
+    }
+    elCells.innerHTML = renderCells(impossibleSteps, c);
   } else if (s.case === 'above') {
     totalSlides = 1;
     elSlides.classList.add('single'); elDot1.style.display = 'none'; elHint.style.display = 'none';
     elSlide0.innerHTML = `<div class="vH-action-row">
-      <div class="vH-action-icon" style="color:${c.text}">✓</div>
-      <div class="vH-action-text">You can <strong>skip ${s.safeBunks} class${s.safeBunks!==1?'es':''}</strong> safely</div>
-      <div class="vH-action-num" style="color:${c.text}">${s.safeBunks}</div>
+      <div class="vH-action-icon" style="color:${c.text}">${s.safeBunks === 0 ? '!' : '✓'}</div>
+      <div class="vH-action-text">${s.safeBunks === 0 ? `<strong>Right on the edge</strong> — don't skip any` : `You can skip <strong>${s.safeBunks} class${s.safeBunks!==1?'es':''}</strong> safely`}</div>
     </div>`;
     elCells.innerHTML = renderCells(buildSteps(s), c);
   } else {
@@ -759,12 +784,10 @@ function updateCard(s) {
     elSlide0.innerHTML = `<div class="vH-action-row">
       <div class="vH-action-icon" style="color:${c.text}">↑</div>
       <div class="vH-action-text">Attend <strong>${s.attendNeeded} more class${s.attendNeeded!==1?'es':''}</strong> to reach ${s.target}%</div>
-      <div class="vH-action-num" style="color:${c.text}">${s.attendNeeded}</div>
     </div>`;
     elSlide1.innerHTML = `<div class="vH-action-row">
       <div class="vH-action-icon" style="color:${c.text}">✦</div>
       <div class="vH-action-text">Or convince teacher to mark <strong>${s.convinceNeeded} absent</strong> as present</div>
-      <div class="vH-action-num" style="color:${c.text}">${s.convinceNeeded}</div>
     </div>`;
     elCells.innerHTML = renderCells(buildSteps(s), c);
   }
@@ -773,6 +796,8 @@ function updateCard(s) {
   elOuter.classList.remove('scrolled', 'at-end');
   setTimeout(() => { if (elWrap.scrollWidth <= elWrap.clientWidth) elOuter.classList.add('at-end'); }, 50);
   scrollToTarget();
+  // Restart auto-scroll timer whenever the card re-renders
+  if (typeof resetAutoScroll === 'function') resetAutoScroll();
 }
 
 // Master update — called whenever any slider changes
@@ -827,6 +852,94 @@ elCard.addEventListener('touchend', e => {
 });
 
 // ════════════════════════════════════════════
+//  AUTO-SCROLL CAROUSEL WITH PROGRESS BAR
+// ════════════════════════════════════════════
+const CAROUSEL_INTERVAL = 4500; // ms
+let autoScrollRaf = null;
+let autoScrollStart = null;
+let autoScrollPaused = false;
+
+function getActiveDot() {
+  return currentSlide === 0 ? elDot0 : elDot1;
+}
+
+function setDotProgress(dot, fraction) {
+  dot.style.setProperty('--dot-progress', (fraction * 100).toFixed(2) + '%');
+}
+
+function resetDotProgress(dot) {
+  dot.style.setProperty('--dot-progress', '0%');
+}
+
+function startAutoScroll() {
+  if (autoScrollRaf) cancelAnimationFrame(autoScrollRaf);
+  autoScrollStart = null;
+
+  function tick(now) {
+    if (totalSlides < 2) {
+      // Single-slide mode — nothing to do
+      autoScrollRaf = null;
+      return;
+    }
+    if (autoScrollPaused) {
+      autoScrollStart = now; // reset timer while paused
+      autoScrollRaf = requestAnimationFrame(tick);
+      return;
+    }
+    if (!autoScrollStart) autoScrollStart = now;
+    const elapsed = now - autoScrollStart;
+    const fraction = Math.min(elapsed / CAROUSEL_INTERVAL, 1);
+
+    // Drive the active (line) indicator progress
+    setDotProgress(getActiveDot(), fraction);
+
+    if (fraction >= 1) {
+      // Advance slide
+      const nextSlide = (currentSlide + 1) % totalSlides;
+      resetDotProgress(getActiveDot());
+      goToSlide(nextSlide, lastS, col(lastCase));
+      // reset timer for next slide
+      autoScrollStart = now;
+      autoScrollRaf = requestAnimationFrame(tick);
+      return;
+    }
+
+    autoScrollRaf = requestAnimationFrame(tick);
+  }
+
+  autoScrollRaf = requestAnimationFrame(tick);
+}
+
+function resetAutoScroll() {
+  resetDotProgress(elDot0);
+  resetDotProgress(elDot1);
+  startAutoScroll();
+}
+
+// Pause on user interaction, resume after 1.5s idle
+function pauseAutoScroll() {
+  autoScrollPaused = true;
+}
+function scheduleResume() {
+  pauseAutoScroll();
+  clearTimeout(window._autoScrollResumeTimer);
+  window._autoScrollResumeTimer = setTimeout(() => {
+    autoScrollPaused = false;
+    autoScrollStart = null; // restart timer from now
+  }, 1500);
+}
+
+// Hook into dot clicks
+elDots.addEventListener('click', () => scheduleResume());
+
+// Hook into touch swipes
+elCard.addEventListener('touchstart', () => pauseAutoScroll(), { passive: true });
+elCard.addEventListener('touchend',   () => scheduleResume(),  { passive: true });
+
+// Start the loop
+startAutoScroll();
+
+// ════════════════════════════════════════════
 //  SLIDER LOGIC
 // ════════════════════════════════════════════
 const TICK_COUNT = 100;
@@ -860,8 +973,9 @@ function setDisplayImmediate(valEl, val) {
   valEl.style.opacity   = '1';
 }
 
-function createRadialSlider({ wheelEl, valEl, containerEl, getMaxValue, onValueSettle, initialValue }) {
+function createRadialSlider({ wheelEl, valEl, containerEl, getMaxValue, getMinValue, onValueSettle, initialValue }) {
   const settle = onValueSettle || (() => {});
+  const minVal = () => (getMinValue ? getMinValue() : 0);
 
   const frag = document.createDocumentFragment();
   for (let i = 0; i < TICK_COUNT; i++) {
@@ -875,9 +989,9 @@ function createRadialSlider({ wheelEl, valEl, containerEl, getMaxValue, onValueS
   }
   wheelEl.appendChild(frag);
 
-  const snapAngle = v => Math.round(Math.max(0, Math.min(getMaxValue(), v)) / 1) * SNAP_ANGLE;
+  const snapAngle = v => Math.round(Math.max(minVal(), Math.min(getMaxValue(), v)) / 1) * SNAP_ANGLE;
 
-  let accumulatedRotation = initialValue * SNAP_ANGLE;
+  let accumulatedRotation = (initialValue - minVal()) * SNAP_ANGLE;
   let isDragging = false, lastClientX = 0, lastMoveTime = 0, velocityDps = 0;
   let momentumRAF = null, rubberAnchorX = null, rubberOffset = 0, rubberRafId = null;
   let shakeDebounce = false, lastDisplayedValue = initialValue, lastTickValue = initialValue;
@@ -888,7 +1002,7 @@ function createRadialSlider({ wheelEl, valEl, containerEl, getMaxValue, onValueS
   const maxRot = () => getMaxValue() * SNAP_ANGLE;
 
   function getValueFromRotation(rot) {
-    return Math.max(0, Math.min(getMaxValue(), Math.round(rot / SNAP_ANGLE)));
+    return Math.max(minVal(), Math.min(getMaxValue(), Math.round(rot / SNAP_ANGLE) + minVal()));
   }
   function applyVisualRotation(logical, extra = 0, animate = false) {
     wheelEl.style.transition = animate ? 'transform 0.35s cubic-bezier(0.34,1.2,0.64,1)' : 'none';
@@ -941,7 +1055,7 @@ function createRadialSlider({ wheelEl, valEl, containerEl, getMaxValue, onValueS
       const dt = Math.min((now - lastTime) / 1000, 0.05);
       lastTime = now;
       const newRot = accumulatedRotation + vel * dt;
-      if (newRot < 0) { accumulatedRotation = 0; applyVisualRotation(0); updateDisplay(0); triggerBoundaryFeedback(); settle(0); return; }
+      if (newRot < 0) { accumulatedRotation = 0; applyVisualRotation(0); updateDisplay(minVal()); triggerBoundaryFeedback(); settle(minVal()); return; }
       if (newRot > maxRot()) { finishMomentum(maxRot()); return; }
       accumulatedRotation = newRot;
       applyVisualRotation(accumulatedRotation);
@@ -969,9 +1083,9 @@ function createRadialSlider({ wheelEl, valEl, containerEl, getMaxValue, onValueS
     const desired = accumulatedRotation + delta;
     if (desired < 0) {
       accumulatedRotation = 0;
-      if (rubberAnchorX === null) { rubberAnchorX = clientX; settle(0); }
+      if (rubberAnchorX === null) { rubberAnchorX = clientX; settle(minVal()); }
       rubberOffset = RUBBER_MAX * (1 - Math.exp(-Math.max(0, clientX - rubberAnchorX) / 40));
-      applyVisualRotation(0, rubberOffset); updateDisplay(0);
+      applyVisualRotation(0, rubberOffset); updateDisplay(minVal());
       if (!shakeDebounce) {
         shakeDebounce = true;
         valEl.classList.add('at-zero', 'shake');
@@ -1024,6 +1138,7 @@ const s1 = createRadialSlider({
   valEl:       $('val'),
   containerEl: $('wheelContainer'),
   getMaxValue: () => 500,
+  getMinValue: () => 1,
   initialValue: gTotal,       // restored from localStorage or default
   onValueSettle: v => { gTotal = v; onValuesChanged(); },
 });
@@ -1225,6 +1340,147 @@ window.addEventListener('touchend',  ()  => { s1.onDragEnd(); s2.onDragEnd(); })
 
 // ── Initial card render ──
 onValuesChanged();
+
+// ════════════════════════════════════════════
+//  INTRO ANIMATION — runs only on first visit
+//  (when no localStorage value exists)
+// ════════════════════════════════════════════
+(function runIntroAnimation() {
+  // Animate to saved values (fast) or defaults (normal speed)
+  const isFresh    = !_saved;
+  const toTotal    = gTotal;
+  const toAttended = gAttended;
+  const toTarget   = gTarget;
+
+  const SNAP_ANGLE = 360 / 100; // must match slider constant
+
+  // ── Easing ──
+  function easeOutExpo(t) {
+    return t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
+  }
+  function easeOutQuart(t) {
+    return 1 - Math.pow(1 - t, 4);
+  }
+
+  // ── Animate a radial wheel from 0 → target value ──
+  function animateWheel(wheelEl, valEl, targetVal, duration, onDone) {
+    const targetRot = targetVal * SNAP_ANGLE;
+    let start = null;
+    let lastVal = -1;
+
+    // Reset wheel to 0 before animating
+    wheelEl.style.transition = 'none';
+    wheelEl.style.transform  = 'rotate(0deg)';
+    valEl.textContent = '0';
+
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      function step(now) {
+        if (!start) start = now;
+        const t = Math.min((now - start) / duration, 1);
+        const eased = easeOutExpo(t);
+        const rot = eased * targetRot;
+        const val = Math.round(eased * targetVal);
+
+        wheelEl.style.transition = 'none';
+        wheelEl.style.transform  = `rotate(${-rot}deg)`;
+
+        if (val !== lastVal) {
+          valEl.textContent = val;
+          valEl.style.transform = 'translate(-50%,-50%) scale(1)';
+          valEl.style.opacity   = '1';
+          lastVal = val;
+        }
+
+        if (t < 1) {
+          requestAnimationFrame(step);
+        } else {
+          wheelEl.style.transform = `rotate(${-targetRot}deg)`;
+          valEl.textContent = targetVal;
+          if (onDone) onDone();
+        }
+      }
+      requestAnimationFrame(step);
+    }));
+  }
+
+  // ── Animate the horizontal slider strip from 40 → target ──
+  function animateHorizontal(targetVal, duration, onDone) {
+    const MIN_VALUE_H = 40;
+    const TICK_PX     = 10;
+    const strip       = $('tickStrip3');
+    const valEl       = $('val3');
+    const targetOff   = (targetVal - MIN_VALUE_H) * TICK_PX;
+    let start = null;
+    let lastVal = -1;
+
+    // Reset to 40 before animating
+    strip.style.transition = 'none';
+    strip.style.transform  = 'translateX(0px)';
+    valEl.textContent = '40';
+
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      function step(now) {
+        if (!start) start = now;
+        const t = Math.min((now - start) / duration, 1);
+        const eased = easeOutQuart(t);
+        const off   = eased * targetOff;
+        const val   = MIN_VALUE_H + Math.round(eased * (targetVal - MIN_VALUE_H));
+
+        strip.style.transition = 'none';
+        strip.style.transform  = `translateX(${-off}px)`;
+
+        if (val !== lastVal) {
+          valEl.textContent = val;
+          lastVal = val;
+        }
+
+        if (t < 1) {
+          requestAnimationFrame(step);
+        } else {
+          strip.style.transform = `translateX(${-targetOff}px)`;
+          valEl.textContent = targetVal;
+          if (onDone) onDone();
+        }
+      }
+      requestAnimationFrame(step);
+    }));
+  }
+
+  // ── Pulse the display card to draw attention ──
+  function pulseCard() {
+    const card = $('vH');
+    card.style.transition = 'transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease';
+    card.style.transform  = 'scale(1.012)';
+    card.style.boxShadow  = '0 0 0 1.5px rgba(255,255,255,0.12)';
+    setTimeout(() => {
+      card.style.transform = 'scale(1)';
+      card.style.boxShadow = '';
+      setTimeout(() => { card.style.transition = ''; }, 350);
+    }, 320);
+  }
+
+  // Durations: normal on first visit, faster on returning visit
+  const d1 = isFresh ? 900 : 520;
+  const d2 = isFresh ? 750 : 420;
+  const d3 = isFresh ? 700 : 380;
+  const gap1 = isFresh ? 120 : 70;
+  const gap2 = isFresh ? 100 : 50;
+
+  // Small delay so the page paints first
+  setTimeout(() => {
+    animateWheel($('wheel'), $('val'), toTotal, d1, () => {
+      setTimeout(() => {
+        animateWheel($('wheel2'), $('val2'), toAttended, d2, () => {
+          setTimeout(() => {
+            animateHorizontal(toTarget, d3, () => {
+              pulseCard();
+            });
+          }, gap2);
+        });
+      }, gap1);
+    });
+  }, 380);
+})();
 
 // ── Canvas noise ──
 (function () {
