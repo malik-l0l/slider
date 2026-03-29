@@ -329,101 +329,104 @@
     }
     .vH-cell-col.is-target .vH-cell-sq { outline: 2px solid rgba(255,255,255,.5); outline-offset: 1px; }
 
-    /* ── Gap cell ── */
-    /* Matches vH-cell-col structure exactly: top-label / rect / bot-label */
-    .vH-gap-cell {
+    /* ── Gap cell styles ── */
+    .vH-gap-wrap {
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 2px;
       flex-shrink: 0;
     }
-    .vH-gap-cell .gap-above {
+    .vH-gap-above {
       font-family: var(--mono);
       font-size: var(--fs-cell);
       font-weight: 600;
       line-height: 1;
-      min-height: 10px;
+      color: rgba(255,255,255,0.75);
       white-space: nowrap;
-      color: rgba(255,255,255,0.7);
-      text-align: center;
-    }
-    .vH-gap-cell .gap-below {
-      font-family: var(--mono);
-      font-size: var(--fs-cell);
-      line-height: 1;
       min-height: 10px;
-      white-space: nowrap;
-      color: rgba(255,255,255,0.4);
       text-align: center;
+      letter-spacing: 0.02em;
     }
-    /* The wide rectangle — same height as vH-cell-sq, wider width */
     .vH-gap-rect {
-      width: clamp(76px, 20vw, 96px);
+      width: 82px;
       height: var(--cell-sq);
-      border-radius: 6px;
-      border: 1px dashed rgba(255,255,255,0.18);
+      border-radius: 4px;
+      border: 1.5px dashed rgba(255,255,255,0.28);
       display: flex;
       align-items: center;
       justify-content: center;
-      flex-shrink: 0;
+      cursor: pointer;
       position: relative;
       overflow: hidden;
-      transition: border-color 0.18s ease;
+      flex-shrink: 0;
+      transition: border-color 0.2s ease, opacity 0.2s ease;
     }
-    /* Gradient shimmer background — grey fading between neighbour cell colors */
-    .vH-gap-rect-bg {
-      position: absolute;
-      inset: 0;
-      border-radius: 5px;
-      background: linear-gradient(
-        90deg,
-        var(--gap-color-start, rgba(255,255,255,0.07)) 0%,
-        rgba(255,255,255,0.04) 50%,
-        var(--gap-color-end,   rgba(255,255,255,0.07)) 100%
-      );
-      transition: opacity 0.2s ease;
+    .vH-gap-rect[data-gap-tap="0"] {
+      opacity: 0.5;
+      cursor: default;
+      width: 120px;
+    }
+    .vH-gap-rect[data-gap-tap="1"]:hover {
+      border-color: rgba(255,255,255,0.45);
     }
     .vH-gap-hint {
-      position: relative;
-      z-index: 1;
       font-family: var(--mono);
       font-size: 8px;
-      color: rgba(255,255,255,0.32);
-      letter-spacing: 0.05em;
-      white-space: nowrap;
+      color: rgba(255,255,255,0.45);
+      letter-spacing: 0.04em;
+      z-index: 1;
+      transition: opacity 0.2s ease;
+      pointer-events: none;
       text-align: center;
-      user-select: none;
+      padding: 0 6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
     }
-    /* Tappable state */
-    [data-gap-tap="1"] .vH-gap-rect { cursor: pointer; }
-    [data-gap-tap="1"] .vH-gap-rect:hover { border-color: rgba(255,255,255,0.38); }
-    [data-gap-tap="1"] .vH-gap-rect:hover .vH-gap-rect-bg { opacity: 1.5; }
-    [data-gap-tap="1"] .vH-gap-rect:active { border-color: rgba(255,255,255,0.55); }
-    /* Non-tappable */
-    .vH-gap-cell[data-gap-tap="0"] { opacity: 0.5; cursor: default; }
-    /* Loading shimmer — shown while expanded cells are being inserted */
-    @keyframes gap-shimmer {
-      0%   { transform: translateX(-100%); }
-      100% { transform: translateX(100%); }
-    }
-    .vH-gap-rect.loading { border-color: rgba(255,255,255,0.35); }
-    .vH-gap-rect.loading .vH-gap-rect-bg {
-      background: linear-gradient(
-        90deg,
-        var(--gap-color-start, rgba(255,255,255,0.05)) 0%,
-        rgba(255,255,255,0.12) 40%,
-        rgba(255,255,255,0.22) 50%,
-        rgba(255,255,255,0.12) 60%,
-        var(--gap-color-end,   rgba(255,255,255,0.05)) 100%
-      );
-      animation: gap-shimmer 1.1s ease-in-out infinite;
+    /* untappable gap: hint is the funny line, make it slightly more visible */
+    .vH-gap-rect[data-gap-tap="0"] .vH-gap-hint {
+      font-size: 7.5px;
+      color: rgba(255,255,255,0.32);
+      letter-spacing: 0.02em;
+      font-style: italic;
     }
     .vH-gap-rect.loading .vH-gap-hint { opacity: 0; }
-    .gap-arrow {
-      display: inline-block;
-      margin: 0 2px;
-      opacity: 0.45;
+    .vH-gap-rect::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--gap-bg, rgba(120,120,120,0.12));
+      z-index: 0;
+    }
+    .vH-gap-rect.loading::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        var(--gap-shimmer, rgba(255,255,255,0.22)) 50%,
+        transparent 100%
+      );
+      background-size: 200% 100%;
+      animation: gap-shimmer 1.1s ease-in-out infinite;
+      z-index: 2;
+    }
+    @keyframes gap-shimmer {
+      0%   { background-position: -100% 0; }
+      100% { background-position:  200% 0; }
+    }
+    .vH-gap-below {
+      font-family: var(--mono);
+      font-size: var(--fs-cell);
+      font-weight: 400;
+      line-height: 1;
+      color: rgba(255,255,255,0.38);
+      white-space: nowrap;
+      min-height: 10px;
+      text-align: center;
     }
 
     /* divider */
@@ -916,14 +919,15 @@ let currentSlide = 0, totalSlides = 1, lastS = null, lastCase = 'above';
 function calc(total, attended, target) {
   const pct = total ? Math.round(attended / total * 100) : 0;
   if (target === 100 && attended < total) return { case:'impossible', pct, attended, total, target };
+  // Use exact fraction (×100) vs target to avoid Math.round early-exit bugs.
+  // e.g. 32833/33333 = 98.5% rounds to 99 but is NOT truly ≥ 99%.
+  // We require the true ratio × 100 ≥ target (no rounding on the threshold check).
   if (pct < target) {
-    // Cap at 9999 — beyond that the number is meaningless to display
-    let an = 0; while (an < 9999 && Math.round((attended+an)/(total+an)*100) < target) an++;
-    let cn = 0; while (cn < 9999 && Math.round((attended+cn)/total*100) < target) cn++;
+    let an = 0; while ((attended+an)/(total+an)*100 < target) an++;
+    let cn = 0; while ((attended+cn)/total*100 < target) cn++;
     return { case:'below', pct, attended, total, target, attendNeeded:an, convinceNeeded:cn };
   }
-  // Cap at 9999 — if you can bunk 10k classes the exact number doesn't matter
-  let b = 0; while (b < 9999 && total+b > 0 && Math.round(attended/(total+b)*100) >= target) b++;
+  let b = 0; while (total+b > 0 && attended/(total+b)*100 >= target) b++;
   return { case:'above', pct, attended, total, target, safeBunks: Math.max(0, b-1) };
 }
 
@@ -940,174 +944,176 @@ function gradientColor(hex, t) {
   return `rgb(${br+(r-br)*t|0},${bg2+(g-bg2)*t|0},${bb+(b-bb)*t|0})`;
 }
 
-
-
-// ════════════════════════════════════════════
-//  GAP-CELL SYSTEM
-//  Nearby cells on each side of a gap
-//  Gap triggers only when total steps > GAP_THRESHOLD
-//  Expanded state auto-collapses on any slider move
-// ════════════════════════════════════════════
-const NEARBY      = 100;   // cells shown on each side of the gap
-const GAP_THRESHOLD = 200; // (NEARBY*2) — below this, render everything
-const GAP_MAX_EXPAND = 2000; // max steps we'll DOM-render on expand tap
-
-let gGapExpanded = false; // expand state — reset on every onValuesChanged
-
-// Called by onValuesChanged to always collapse on slider move
-function collapseGap() { gGapExpanded = false; }
-
-// ── buildSteps / buildConvinceSteps (defined here, after constants) ──
 function buildSteps(s) {
-  if (s.case === 'impossible') return [];
-  return buildStepsFull(s, s.case === 'above'
-    ? Math.min(s.safeBunks + 2, NEARBY * 2 + GAP_MAX_EXPAND + 10)
-    : s.attendNeeded + 2);
-}
-
-function buildConvinceSteps(s) {
-  const rows = [{ attended:s.attended, total:s.total, pct:s.pct, label:'now', isCurrent:true, isTarget:false }];
-  for (let i = 1; i <= s.convinceNeeded; i++) {
-    const a = s.attended+i, p = Math.round(a/s.total*100);
-    rows.push({ attended:a, total:s.total, pct:p, label:`+${i}`, isCurrent:false, isTarget:p>=s.target });
-    if (p >= s.target) break;
-  }
-  return rows;
-}
-
-// Build a full step array up to a given limit (for expand path)
-function buildStepsFull(s, limit) {
   if (s.case === 'impossible') return [];
   const rows = [{ attended:s.attended, total:s.total, pct:s.pct, label:'now', isCurrent:true, isTarget:false }];
   if (s.case === 'below') {
-    for (let i = 1; i <= Math.min(s.attendNeeded, limit); i++) {
+    for (let i = 1; i <= s.attendNeeded; i++) {
       const a = s.attended+i, tot = s.total+i, p = Math.round(a/tot*100);
-      rows.push({ attended:a, total:tot, pct:p, label:`+${i}`, isCurrent:false, isTarget:p>=s.target });
-      if (p >= s.target) break;
+      const reached = a/tot*100 >= s.target;
+      rows.push({ attended:a, total:tot, pct:p, label:`+${i}`, isCurrent:false, isTarget:reached });
+      if (reached) break;
     }
   } else {
-    for (let i = 1; i <= Math.min(s.safeBunks+1, limit); i++) {
+    for (let i = 1; i <= s.safeBunks+1; i++) {
       const tot = s.total+i, p = Math.round(s.attended/tot*100);
       rows.push({ attended:s.attended, total:tot, pct:p, label:`-${i}`, isCurrent:false, isTarget:i===s.safeBunks });
-      if (p < s.target) break;
+      if (s.attended/tot*100 < s.target) break;
     }
     if (s.safeBunks === 0) rows[rows.length-1].isTarget = true;
   }
   return rows;
 }
 
-// Render a single step row as an HTML cell string
-function renderOneCell(row, t, c) {
-  const bg       = gradientColor(c.main, t);
-  const topColor = row.isCurrent ? 'rgba(255,255,255,0.55)' : row.isTarget ? c.text : 'rgba(255,255,255,0.7)';
-  const botColor = row.isCurrent ? 'rgba(255,255,255,0.45)' : row.isTarget ? c.text : 'rgba(255,255,255,0.6)';
-  const botLabel = row.isCurrent ? `${row.attended}/${row.total}` : row.label;
+function buildConvinceSteps(s) {
+  const rows = [{ attended:s.attended, total:s.total, pct:s.pct, label:'now', isCurrent:true, isTarget:false }];
+  for (let i = 1; i <= s.convinceNeeded; i++) {
+    const a = s.attended+i, p = Math.round(a/s.total*100);
+    const reached = a/s.total*100 >= s.target;
+    rows.push({ attended:a, total:s.total, pct:p, label:`+${i}`, isCurrent:false, isTarget:reached });
+    if (reached) break;
+  }
+  return rows;
+}
+
+// ── Colour helper ──
+function cellColors(row, intermediateIdx, count, c) {
+  let t;
+  if (row.isCurrent) t = 0.08;
+  else if (row.isTarget) t = 1.0;
+  else {
+    const pos = intermediateIdx.get(row);
+    t = count <= 1 ? 0.5 : 0.22 + (pos / (count-1)) * 0.63;
+  }
+  return {
+    bg:       gradientColor(c.main, t),
+    topColor: row.isCurrent ? 'rgba(255,255,255,0.55)' : row.isTarget ? c.text : 'rgba(255,255,255,0.7)',
+    botColor: row.isCurrent ? 'rgba(255,255,255,0.45)' : row.isTarget ? c.text : 'rgba(255,255,255,0.6)',
+    botLabel: row.isCurrent ? `${row.attended}/${row.total}` : row.label,
+  };
+}
+
+function cellHTML(row, cols) {
   return `<div class="vH-cell-col${row.isTarget?' is-target':''}">
-    <div class="vH-cell-top" style="color:${topColor}">${row.pct}%</div>
-    <div class="vH-cell-sq"><div class="vH-cell-sq-inner" style="background:${bg}"></div></div>
-    <div class="vH-cell-bot" style="color:${botColor}">${botLabel}</div>
+    <div class="vH-cell-top" style="color:${cols.topColor}">${row.pct}%</div>
+    <div class="vH-cell-sq"><div class="vH-cell-sq-inner" style="background:${cols.bg}"></div></div>
+    <div class="vH-cell-bot" style="color:${cols.botColor}">${cols.botLabel}</div>
   </div>`;
 }
 
-// Assign gradient t-value across an array of intermediate rows
-function assignT(rows) {
-  // rows: only the non-current, non-target middle rows
-  return rows.map((row, i) => {
-    const t = rows.length <= 1 ? 0.5 : 0.22 + (i / (rows.length - 1)) * 0.63;
-    return { row, t };
-  });
-}
+// ── Virtualized renderer with gap cells ──
+// NEARBY = cells shown on each side of the gap before collapsing
+const NEARBY = 150;
 
-// Build the gap cell HTML
-// pctStart/pctEnd: attendance % at gap boundaries
-// labelStart/labelEnd: step labels (+101 / +9699)
-// gapCount: number of hidden steps
-// tappable: bool
-// colorStart/colorEnd: rgb strings of the adjacent cell colours for the gradient
-function renderGapCell(pctStart, pctEnd, labelStart, labelEnd, gapCount, tappable, colorStart, colorEnd) {
-  const tapAttr   = tappable
-    ? ' data-gap-tap="1" role="button" tabindex="0" aria-label="Tap to expand hidden steps"'
-    : ' data-gap-tap="0"';
-  const hintText  = tappable ? 'tap to expand' : 'too many to show';
-  // Inline CSS vars for the gradient — derived from neighbour cell colours
-  const bgStyle   = `--gap-color-start:${colorStart};--gap-color-end:${colorEnd};`;
-  return `<div class="vH-gap-cell"${tapAttr}>
-    <div class="gap-above">${pctStart}%<span class="gap-arrow">→</span>${pctEnd}%</div>
-    <div class="vH-gap-rect" style="${bgStyle}">
-      <div class="vH-gap-rect-bg"></div>
+function renderCells(steps, c) {
+  if (!steps.length) return '';
+
+  const intermediates = steps.filter(r => !r.isCurrent && !r.isTarget);
+  const count         = intermediates.length;
+  const intermediateIdx = new Map(intermediates.map((r, i) => [r, i]));
+
+  // Total intermediate steps (all non-current, non-target)
+  const totalMiddle = count;
+
+  // Decide whether we need a gap
+  // Gap threshold: if middle steps > 300, we collapse
+  const GAP_THRESHOLD = 300;
+
+  if (totalMiddle <= GAP_THRESHOLD) {
+    // Render all cells normally
+    return steps.map(row => cellHTML(row, cellColors(row, intermediateIdx, count, c))).join('');
+  }
+
+  // We have > 300 middle steps — split into visible + gap + visible
+  // Visible on left side: current + first NEARBY middles
+  // Visible on right side: last NEARBY middles + target
+  const gapSize = totalMiddle - NEARBY * 2; // hidden step count
+
+  const leftVisible  = [steps[0], ...intermediates.slice(0, NEARBY)];
+  const rightVisible = [...intermediates.slice(-NEARBY), steps[steps.length - 1]];
+
+  // Build left HTML
+  const leftHTML = leftVisible.map(row => cellHTML(row, cellColors(row, intermediateIdx, count, c))).join('');
+
+  // Gap label info
+  const firstHidden = intermediates[NEARBY];
+  const lastHidden  = intermediates[intermediates.length - NEARBY - 1];
+  const aboveLabel  = `${firstHidden.pct}% → ${lastHidden.pct}%`;
+  const skipFirst   = intermediates[NEARBY].label;
+  const skipLast    = intermediates[intermediates.length - NEARBY - 1].label;
+  const belowLabel  = `${skipFirst} → ${skipLast}`;
+
+  // Gap color — average of first and last hidden cell
+  const colFirst = cellColors(firstHidden, intermediateIdx, count, c);
+  const colLast  = cellColors(lastHidden,  intermediateIdx, count, c);
+  const bgFirst  = colFirst.bg;
+  const bgLast   = colLast.bg;
+  const gapBg    = `linear-gradient(90deg, ${bgFirst}, ${bgLast})`;
+  const shimmer  = `rgba(255,255,255,0.25)`;
+
+  // Tappable if gap ≤ 2000
+  const tappable = gapSize <= 2000;
+  // Funny untappable hint — varies by how hopeless the gap is
+  function untappableHint(gapSize) {
+    if (gapSize > 40000) return "god help you";
+    if (gapSize > 20000) return "next lifetime";
+    if (gapSize > 10000) return "not this sem";
+    if (gapSize > 5000)  return "maybe next year";
+    return "bunk life";
+  }
+  const hintText = tappable ? 'tap to expand' : untappableHint(gapSize);
+
+  const gapHTML = `<div class="vH-gap-wrap" data-gap-wrap="1">
+    <div class="vH-gap-above">${aboveLabel}</div>
+    <div class="vH-gap-rect"
+         data-gap-tap="${tappable ? 1 : 0}"
+         data-gap-first="${NEARBY}"
+         data-gap-last="${intermediates.length - NEARBY - 1}"
+         style="--gap-bg:${gapBg};--gap-shimmer:${shimmer}">
       <span class="vH-gap-hint">${hintText}</span>
     </div>
-    <div class="gap-below">${labelStart}<span class="gap-arrow">→</span>${labelEnd}</div>
+    <div class="vH-gap-below">${belowLabel}</div>
   </div>`;
+
+  // Build right HTML
+  const rightHTML = rightVisible.map(row => cellHTML(row, cellColors(row, intermediateIdx, count, c))).join('');
+
+  return leftHTML + gapHTML + rightHTML;
 }
 
-function renderCells(allSteps, c, s) {
-  if (!allSteps.length) return '';
+// ── Gap expand handler — attached once, re-delegated on each rebuild ──
+function attachGapHandler(steps, c) {
+  const intermediates = steps.filter(r => !r.isCurrent && !r.isTarget);
+  const count         = intermediates.length;
+  const intermediateIdx = new Map(intermediates.map((r, i) => [r, i]));
 
-  const totalStepCount = allSteps.length; // includes current + target
+  elCells._gapHandler && elCells.removeEventListener('click', elCells._gapHandler);
 
-  // ── EXPANDED: render everything (up to GAP_MAX_EXPAND) ──
-  if (gGapExpanded) {
-    const middle = allSteps.slice(1, -1);
-    const tPairs = assignT(middle);
-    const first  = allSteps[0];
-    const last   = allSteps[allSteps.length - 1];
-    let html = renderOneCell(first, 0.08, c);
-    tPairs.forEach(({ row, t }) => { html += renderOneCell(row, t, c); });
-    html += renderOneCell(last, 1.0, c);
-    return html;
-  }
+  const handler = (e) => {
+    const rect = e.target.closest('.vH-gap-rect');
+    if (!rect) return;
+    if (rect.dataset.gapTap !== '1') return;
 
-  // ── COMPACT: no gap needed ──
-  if (totalStepCount <= GAP_THRESHOLD) {
-    const middle = allSteps.slice(1, -1);
-    const tPairs = assignT(middle);
-    const first  = allSteps[0];
-    const last   = allSteps[allSteps.length - 1];
-    let html = renderOneCell(first, 0.08, c);
-    tPairs.forEach(({ row, t }) => { html += renderOneCell(row, t, c); });
-    html += renderOneCell(last, 1.0, c);
-    return html;
-  }
+    // Shimmer
+    rect.classList.add('loading');
 
-  // ── GAP MODE: nearby + gap cell + nearby + target ──
-  const middle      = allSteps.slice(1, -1); // excludes current and target
-  const first       = allSteps[0];
-  const last        = allSteps[allSteps.length - 1];
-  const beforeGap   = middle.slice(0, NEARBY);
-  const afterGap    = middle.slice(Math.max(middle.length - NEARBY, NEARBY));
-  const gapRows     = middle.slice(NEARBY, Math.max(middle.length - NEARBY, NEARBY));
-  const gapCount    = gapRows.length;
+    // Capture scroll position BEFORE rebuild so expand doesn't jump
+    const scrollBefore = elWrap.scrollLeft;
 
-  // Gradient t-values: before-gap gets 0.22..0.5, after-gap gets 0.5..0.85
-  const beforeT = beforeGap.map((row, i) => ({
-    row, t: 0.22 + (i / Math.max(beforeGap.length - 1, 1)) * 0.28
-  }));
-  const afterT  = afterGap.map((row, i) => ({
-    row, t: 0.50 + (i / Math.max(afterGap.length - 1, 1)) * 0.35
-  }));
+    // After one paint frame, do the heavy DOM work
+    setTimeout(() => {
+      // Render all cells (no gap)
+      const intermediates2 = steps.filter(r => !r.isCurrent && !r.isTarget);
+      const count2 = intermediates2.length;
+      const idx2   = new Map(intermediates2.map((r, i) => [r, i]));
+      elCells.innerHTML = steps.map(row => cellHTML(row, cellColors(row, idx2, count2, c))).join('');
+      // Restore scroll — don't jump away from where the user tapped
+      elWrap.scrollLeft = scrollBefore;
+    }, 40);
+  };
 
-  // Gap cell labels — % at the boundaries, step labels at the boundaries
-  const gapFirstRow  = gapRows[0]  || beforeGap[beforeGap.length - 1];
-  const gapLastRow   = gapRows[gapRows.length - 1] || afterGap[0];
-  const pctStart     = gapFirstRow ? gapFirstRow.pct   : '';
-  const pctEnd       = gapLastRow  ? gapLastRow.pct    : '';
-  const labelStart   = gapFirstRow ? gapFirstRow.label : '';
-  const labelEnd     = gapLastRow  ? gapLastRow.label  : '';
-  const tappable     = gapCount <= GAP_MAX_EXPAND;
-
-  // Neighbour colours for the gap rect gradient — last beforeGap t and first afterGap t
-  const colorStart = gradientColor(c.main, beforeT.length ? beforeT[beforeT.length - 1].t : 0.22);
-  const colorEnd   = gradientColor(c.main, afterT.length  ? afterT[0].t                   : 0.85);
-
-  let html = renderOneCell(first, 0.08, c);
-  beforeT.forEach(({ row, t }) => { html += renderOneCell(row, t, c); });
-  if (gapCount > 0) {
-    html += renderGapCell(pctStart, pctEnd, labelStart, labelEnd, gapCount, tappable, colorStart, colorEnd);
-  }
-  afterT.forEach(({ row, t }) => { html += renderOneCell(row, t, c); });
-  html += renderOneCell(last, 1.0, c);
-  return html;
+  elCells.addEventListener('click', handler);
+  elCells._gapHandler = handler;
 }
 
 function updateFrac(s, c, slideIdx) {
@@ -1139,7 +1145,9 @@ function scrollToTarget() {
 
 function goToSlide(idx, s, c) {
   currentSlide = idx;
-  elCells.innerHTML = renderCells(idx === 0 ? buildSteps(s) : buildConvinceSteps(s), c);
+  const steps = idx === 0 ? buildSteps(s) : buildConvinceSteps(s);
+  elCells.innerHTML = renderCells(steps, c);
+  attachGapHandler(steps, c);
   updateFrac(s, c, idx);
   elSlides.style.transform = idx ? 'translateX(-50%)' : 'translateX(0%)';
   elDot0.classList.toggle('active', idx === 0);
@@ -1174,6 +1182,7 @@ function updateCard(s) {
       if (p >= 100) break;
     }
     elCells.innerHTML = renderCells(impossibleSteps, c);
+    attachGapHandler(impossibleSteps, c);
   } else if (s.case === 'above') {
     totalSlides = 1;
     elSlides.classList.add('single'); elDot1.style.display = 'none'; elHint.style.display = 'none';
@@ -1181,7 +1190,9 @@ function updateCard(s) {
       <div class="vH-action-icon" style="color:${c.text}">${s.safeBunks === 0 ? '!' : '✓'}</div>
       <div class="vH-action-text">${s.safeBunks === 0 ? `<strong>Right on the edge</strong> — don't skip any` : `You can skip <strong>${s.safeBunks} class${s.safeBunks!==1?'es':''}</strong> safely`}</div>
     </div>`;
-    elCells.innerHTML = renderCells(buildSteps(s), c);
+    const aboveSteps = buildSteps(s);
+    elCells.innerHTML = renderCells(aboveSteps, c);
+    attachGapHandler(aboveSteps, c);
   } else {
     totalSlides = 2;
     elSlides.classList.remove('single'); elDot1.style.display = ''; elHint.style.display = '';
@@ -1193,7 +1204,9 @@ function updateCard(s) {
       <div class="vH-action-icon" style="color:${c.text}">✦</div>
       <div class="vH-action-text">Or convince professor to mark <strong>${s.convinceNeeded} absent</strong> as present</div>
     </div>`;
-    elCells.innerHTML = renderCells(buildSteps(s), c);
+    const belowSteps = buildSteps(s);
+    elCells.innerHTML = renderCells(belowSteps, c);
+    attachGapHandler(belowSteps, c);
   }
   updateFrac(s, c, 0);
   elWrap.scrollLeft = 0;
@@ -1203,83 +1216,13 @@ function updateCard(s) {
   resetAutoScroll();
 }
 
-// ── Fast card update — only cosmetic fields, no cell rebuild
-// Called on every drag frame for instant visual response
-function updateCardFast(s) {
-  const c = col(s.case);
-  elPct.innerHTML = `${s.pct}<sup>%</sup>`;
-  elPct.style.color = c.text;
-  elBadge.style.cssText = `background:${c.light};color:${c.text}`;
-  elBadge.textContent = s.case==='above' ? `Above ${s.target}%` : s.case==='impossible' ? 'Impossible' : `Below ${s.target}%`;
-  elSummary.textContent = `${s.attended} of ${s.total} attended · target ${s.target}%`;
-}
-
-let _rafPending = false;
-
 // Master update — called whenever any slider changes
-// preview=true → instant cosmetic update now, full cell rebuild deferred to next rAF
-// preview=false → full rebuild immediately (used on drag-end / settle)
-function onValuesChanged(preview) {
+function onValuesChanged() {
   gAttended = Math.min(gAttended, gTotal);
-  collapseGap(); // always reset expand state on any slider move
-  const s = calc(gTotal, gAttended, gTarget);
-
-  if (preview) {
-    // Always update the visible numbers instantly — zero lag
-    updateCardFast(s);
-    // Schedule one cell rebuild per frame — coalesces rapid events
-    if (!_rafPending) {
-      _rafPending = true;
-      requestAnimationFrame(() => {
-        _rafPending = false;
-        updateCard(calc(gTotal, gAttended, gTarget));
-        s2.clampToMax();
-        saveState();
-      });
-    }
-  } else {
-    updateCard(s);
-    s2.clampToMax();
-    saveState();
-  }
+  updateCard(calc(gTotal, gAttended, gTarget));
+  s2.clampToMax();
+  saveState();
 }
-
-// ── Gap cell tap-to-expand ──
-elCells.addEventListener('click', e => {
-  const cell = e.target.closest('[data-gap-tap="1"]');
-  if (!cell) return;
-
-  // Show loading shimmer on the rect immediately
-  const rect = cell.querySelector('.vH-gap-rect');
-  if (rect) rect.classList.add('loading');
-
-  // Use rAF + setTimeout to let the shimmer paint before the heavy DOM work
-  requestAnimationFrame(() => setTimeout(() => {
-    gGapExpanded = true;
-    if (!lastS || lastS.case === 'impossible') return;
-    const c     = col(lastS.case);
-    const steps = currentSlide === 0
-      ? buildStepsFull(lastS, GAP_MAX_EXPAND + NEARBY * 2 + 10)
-      : buildConvinceSteps(lastS);
-    elCells.innerHTML = renderCells(steps, c, lastS);
-    // Scroll to the midpoint so user lands in the expanded region
-    requestAnimationFrame(() => {
-      const allCells = elWrap.querySelectorAll('.vH-cell-col');
-      const midCell  = allCells[Math.floor(allCells.length / 2)];
-      if (midCell) {
-        const to = elWrap.scrollLeft
-          + midCell.getBoundingClientRect().left
-          - elWrap.getBoundingClientRect().left
-          - elWrap.clientWidth / 2
-          + midCell.offsetWidth / 2;
-        elWrap.scrollTo({ left: Math.max(0, to), behavior: 'smooth' });
-      }
-    });
-  }, 40)); // 40ms — long enough for one shimmer frame to render
-});
-elCells.addEventListener('keydown', e => {
-  if ((e.key === 'Enter' || e.key === ' ') && e.target.closest('[data-gap-tap="1"]')) e.target.click();
-});
 
 // Scroll fade
 elWrap.addEventListener('scroll', () => {
@@ -1659,7 +1602,7 @@ const s1 = createRadialSlider({
   getMaxValue: () => 500,
   getMinValue: () => 1,
   initialValue: gTotal,       // restored from localStorage or default
-  onValueSettle: v => { gTotal = v; onValuesChanged(false); },
+  onValueSettle: v => { gTotal = v; onValuesChanged(); },
 });
 
 const s2 = createRadialSlider({
@@ -1668,7 +1611,7 @@ const s2 = createRadialSlider({
   containerEl: $('wheelContainer2'),
   getMaxValue: () => gTotal,
   initialValue: gAttended,    // restored from localStorage or default
-  onValueSettle: v => { gAttended = v; onValuesChanged(false); },
+  onValueSettle: v => { gAttended = v; onValuesChanged(); },
 });
 
 window.addEventListener('mousemove', e => { s1.onDragMove(e.clientX); s2.onDragMove(e.clientX); s3.onDragMove(e.clientX); });
@@ -1768,9 +1711,7 @@ const s3 = (function createHorizontalSlider() {
     if (Math.abs(val - lastTickValue) >= 1) { playTick(); triggerHaptic(); lastTickValue = val; }
     const prev = gTarget;
     gTarget = val;
-    // During drag → preview (fast cosmetics + deferred cell rebuild)
-    // During momentum finishMomentum → also preview, full rebuild on settle
-    if (prev !== val) onValuesChanged(isDragging || momentumRAF !== null);
+    if (prev !== val) onValuesChanged();
     valEl.textContent     = val;
     valEl.style.transform = 'translate(-50%,-50%) scale(1.08)';
     valEl.style.opacity   = '0.85';
@@ -1816,11 +1757,7 @@ const s3 = (function createHorizontalSlider() {
   function finishMomentum(px) {
     const snapped = snapToNearest(px);
     offsetPx = snapped; applyVisualOffset(snapped, 0, true);
-    const val = getValueFromOffset(snapped);
-    gTarget = val;
-    onValuesChanged(false); // full rebuild now that motion has stopped
-    valEl.textContent = val; lastDisplayedValue = val;
-    repositionLabels();
+    updateDisplay(getValueFromOffset(snapped));
   }
   function startMomentum(initialVel) {
     if (momentumRAF) cancelAnimationFrame(momentumRAF);
@@ -1884,7 +1821,7 @@ const s3 = (function createHorizontalSlider() {
 })();
 
 // ── Initial card render ──
-onValuesChanged(false);
+onValuesChanged();
 
 // ════════════════════════════════════════════
 //  INTRO ANIMATION — runs only on first visit
