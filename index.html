@@ -214,6 +214,16 @@
     }
     .built-with-label.fade-out { opacity: 0; }
     .built-with-label.fade-in  { opacity: 1; }
+    #noise-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 999;
+      pointer-events: none;
+      opacity: 0.045;
+      mix-blend-mode: overlay;
+    }
 
     /* ══════════════════════════════════════
        DISPLAY CARD
@@ -221,7 +231,7 @@
     .vH {
       width: var(--card-w);
       background: var(--card);
-      border-radius: 20px;
+      border-radius: clamp(14px, 3.5vw, 22px);
       padding: var(--display-card-pad-v) var(--display-card-pad-h);
       flex-shrink: 0;
     }
@@ -402,11 +412,12 @@
       width: var(--card-w);
       height: var(--radial-h);
       background: #000;
-      border-radius: 20px;
+      border-radius: clamp(16px, 4vw, 24px);
       padding: var(--radial-pad);
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06), inset 0 1px 0 rgba(255,255,255,0.1);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
       overflow: hidden;
       flex-shrink: 0;
+      border-top: 1px solid rgba(255,255,255,0.11);
     }
     .card::after {
       content: '';
@@ -507,13 +518,14 @@
       width: var(--card-w);
       height: var(--horiz-h);
       background: #000;
-      border-radius: 20px;
+      border-radius: clamp(16px, 4vw, 24px);
       padding: var(--horiz-pad) var(--horiz-pad) 0;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06), inset 0 1px 0 rgba(255,255,255,0.1);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
       overflow: hidden;
       display: flex;
       flex-direction: column;
       flex-shrink: 0;
+      border-top: 1px solid rgba(255,255,255,0.11);
     }
     .card-horizontal::before,
     .card-horizontal::after {
@@ -668,7 +680,7 @@
 </div>
 
 <!-- ── Noise canvas ── -->
-
+<canvas id="noise-canvas" aria-hidden="true"></canvas>
 
 <!-- ── Display Card ── -->
 <div class="vH" id="vH" aria-label="Attendance Calculator Result">
@@ -1712,37 +1724,30 @@ onValuesChanged();
   }, 380);
 })();
 
-// ── Gaussian film grain ──
+// ── Canvas noise ──
 (function () {
-  const canvas = document.createElement('canvas');
-  canvas.id = 'grain';
-  Object.assign(canvas.style, {
-    position:      'fixed',
-    inset:         '0',
-    width:         '100%',
-    height:        '100%',
-    pointerEvents: 'none',
-    zIndex:        '9999',
-    opacity:       '0.22',
-    mixBlendMode:  'overlay',
-  });
-  document.body.appendChild(canvas);
+  const canvas = document.getElementById('noise-canvas');
+  if (!canvas) return;
   const ctx = canvas.getContext('2d');
-  function draw() {
-    const W = window.innerWidth, H = window.innerHeight;
-    canvas.width = W; canvas.height = H;
-    const imageData = ctx.createImageData(W, H);
-    const d = imageData.data;
-    for (let i = 0; i < d.length; i += 4) {
-      const lum = ((Math.random() + Math.random() + Math.random()) / 3) * 255;
-      d[i] = d[i+1] = d[i+2] = lum;
-      d[i+3] = 255;
+
+  function resizeCanvas() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+
+  function drawNoise() {
+    const imageData = ctx.createImageData(canvas.width, canvas.height);
+    const buffer = new Uint32Array(imageData.data.buffer);
+    const len = buffer.length;
+    for (let i = 0; i < len; i++) {
+      if (Math.random() < 0.5) buffer[i] = 0xff000000;
     }
     ctx.putImageData(imageData, 0, 0);
   }
-  draw();
-  let t;
-  window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(draw, 150); });
+
+  resizeCanvas();
+  drawNoise();
+  window.addEventListener('resize', () => { resizeCanvas(); drawNoise(); });
 })();
 // ── Built-with tagline cycler ──
 (function () {
