@@ -1149,7 +1149,10 @@
       width: clamp(62px, 15vw, 90px);
       height: auto;
       right: clamp(8px, 2vw, 14px);
-      top: clamp(-44px, -8vw, -30px);
+      /* Negative clamp: most-negative = min, least-negative = max.
+         At ~390–580px wide, 15vw ≈ 58–87px, so we anchor top to
+         half the mascot height so it always sits on the card edge. */
+      top: calc(clamp(62px, 15vw, 90px) * -0.50);
       z-index: 10;
       mix-blend-mode: normal;
       pointer-events: none;
@@ -1204,8 +1207,8 @@
   <div class="vH-wrapper">
 
     <!-- ── Bunku the Bunny mascot ── -->
-    <video id="bunku-mascot" class="bunku-mascot" src="bunku_the_bunny.mp4" autoplay loop muted playsinline
-      aria-hidden="true"></video>
+    <video id="bunku-mascot" class="bunku-mascot" src="bunku_the_bunny.mp4" muted playsinline
+      preload="auto" aria-hidden="true"></video>
 
     <!-- ── Display Card ── -->
     <div class="vH" id="vH" aria-label="Attendance Calculator Result">
@@ -2427,6 +2430,43 @@
       drawNoise();
       window.addEventListener('resize', () => { resizeCanvas(); drawNoise(); });
     })();
+    // ── Bunku mascot — idle-triggered animation ──
+    (function () {
+      const video = document.getElementById('bunku-mascot');
+      if (!video) return;
+
+      // Start frozen on frame 0
+      video.pause();
+      video.currentTime = 0;
+
+      let scheduled = false;
+
+      function scheduleNext() {
+        if (scheduled) return;
+        scheduled = true;
+        // Wave again after 4–6 seconds (randomized so it feels alive)
+        setTimeout(playOnce, 4000 + Math.random() * 2000);
+      }
+
+      function playOnce() {
+        scheduled = false;
+        video.currentTime = 0;
+        video.play().catch(() => {}); // catch in case browser blocks autoplay
+      }
+
+      // When clip nears end, freeze and schedule the next wave
+      video.addEventListener('timeupdate', () => {
+        if (video.duration && video.currentTime >= video.duration - 0.05) {
+          video.pause();
+          video.currentTime = 0;
+          scheduleNext();
+        }
+      });
+
+      // Greet on load after a short delay, then go idle
+      setTimeout(playOnce, 1500);
+    })();
+
     // ── Built-with tagline cycler ──
     (function () {
       const CREDIT_HTML = `built with <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:-1px;opacity:0.7"><path d="M12 21.593c-5.63-5.539-11-10.297-11-14.402 0-3.791 3.068-5.191 5.281-5.191 1.312 0 4.151.501 5.719 4.457 1.59-3.968 4.464-4.447 5.726-4.447 2.54 0 5.274 1.621 5.274 5.181 0 4.069-5.136 8.625-11 14.402z"/></svg> by <span class="built-with-name">malik-l0l</span>`;
